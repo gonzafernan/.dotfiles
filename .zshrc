@@ -4,6 +4,10 @@
 autoload -U colors && colors
 
 zstyle ':completion:*' completer _complete _ignored
+# Load Git completion
+zstyle ':completion:*:*:git:*' script ~/.zsh/git-completion.bash
+
+fpath=(~/.zsh $fpath)
 zstyle :compinstall filename '/home/ggf/.zshrc'
 
 autoload -Uz compinit && compinit
@@ -26,3 +30,7 @@ setopt PROMPT_SUBST ; PS1='%B%{$fg[red]%}[%{$fg[yellow]%}%n%{$fg[green]%}@%{$fg[
 #RPROMPT='${vcs_info_msg_0_}'
 ## PROMPT='${vcs_info_msg_0_}%# '
 #zstyle ':vcs_info:git:*' formats '%b'
+
+# source aliases
+source ~/.aliasesrc
+

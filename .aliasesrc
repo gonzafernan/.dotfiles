@@ -1,0 +1,16 @@
+# bash/zsh aliases
+
+# git aliases
+alias gs="git status"
+
+# ROS environment aliases
+ROS_DISTRO=humble
+if [ $SHELL = "/usr/bin/zsh" ]
+then
+    alias ros-source="source /opt/ros/${ROS_DISTRO}/setup.zsh"
+elif [ $SHELL = "/usr/bin/bash" ]
+then
+    alias ros-source="source /opt/ros/${ROS_DISTRO}/setup.bash"
+else
+    echo "${SHELL} not supported for ROS ${ROS_DISTRO}"
+fi
