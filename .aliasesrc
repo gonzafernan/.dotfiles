@@ -3,6 +3,9 @@
 # git aliases
 alias gs="git status"
 
+# tmux aliases
+alias tmux="tmux -2"
+
 # ROS environment aliases
 ROS_DISTRO=humble
 if [ $SHELL = "/usr/bin/zsh" ]
