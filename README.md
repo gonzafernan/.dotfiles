@@ -10,4 +10,7 @@ $ stow .
 
 ## Tools tracked
 
-- ZSH
+- zsh
+- Neovim
+- tmux
+
