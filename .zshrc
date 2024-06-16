@@ -1,5 +1,7 @@
 # ZSH config
 
+export PATH="$HOME/.local/bin:$PATH"
+
 # enable colors
 autoload -U colors && colors
 
@@ -19,9 +21,9 @@ SAVEHIST=10000
 setopt autocd
 bindkey -v
 
-# version control system
-source ~/.zsh/git-prompt.sh
-setopt PROMPT_SUBST ; PS1='%B%{$fg[red]%}[%{$fg[yellow]%}%n%{$fg[green]%}@%{$fg[blue]%}%M %{$fg[magenta]%}%~$(__git_ps1 " (%s)")%{$fg[red]%}]%{$reset_color%}$ '
+# oh-my-posh
+eval "$(oh-my-posh init zsh)"
+eval "$(oh-my-posh init zsh --config 'https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/catppuccin_mocha.omp.json')"
 
 #autoload -Uz vcs_info
 #precmd_vcs_info() { vcs_info }
