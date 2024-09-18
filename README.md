@@ -13,4 +13,5 @@ $ stow .
 - zsh
 - Neovim
 - tmux
+- Obsidian
 
