@@ -20,3 +20,9 @@ _darcs
 ^/README.*
 ^/LICENSE.*
 ^/COPYING
+
+# Nix (home-manager) manages these now — see flake.nix/home.nix
+/nvim/
+/tmux/
+/kitty/
+/yazi/
