@@ -26,6 +26,5 @@ Nix (home-manager):
 - yazi
 
 Stow:
-- zsh
 - Obsidian
 
