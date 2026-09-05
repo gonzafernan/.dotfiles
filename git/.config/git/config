@@ -1,0 +1,19 @@
+[user]
+    name = "Gonzalo G. Fernandez"
+    email = fernandez.gfg@gmail.com
+
+[core]
+    editor = nvim
+
+[init]
+    defaultBranch = main
+
+[http]
+    sslVerify = true
+
+[status]
+    branch = true
+    showStash = true
+
+[url "git@github.com:"]
+    insteadOf = "gh:"
