@@ -35,4 +35,21 @@
   xdg.configFile."yazi/package.toml".source = ./yazi/.config/yazi/package.toml;
 
   xdg.configFile."nvim".source = ./nvim/.config/nvim;
+
+  programs.git = {
+    enable = true;
+    userName = "Gonzalo G. Fernandez";
+    userEmail = "fernandez.gfg@gmail.com";
+    ignores = [ "**/.claude/settings.local.json" ];
+    extraConfig = {
+      core.editor = "nvim";
+      init.defaultBranch = "main";
+      http.sslVerify = true;
+      status.branch = true;
+      status.showStash = true;
+      url."git@github.com:".insteadOf = "gh:";
+    };
+  };
+
+  xdg.configFile."obsidian/obsidian.vimrc".source = ./obsidian/.config/obsidian/obsidian.vimrc;
 }
