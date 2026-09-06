@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 
 let
   mocha = {
@@ -27,6 +27,29 @@ in
     polkit_gnome
   ];
 
+  # On NixOS, hardware.graphics.enable wires these up automatically. Standalone
+  # home-manager on a non-NixOS distro has no equivalent, so without this
+  # Hyprland's Nix-built Mesa can't find its own Intel driver (iris_dri.so) or
+  # EGL vendor ICD, and OpenGL/EGL init silently fails ("no gbm support",
+  # "Supported EGL extensions: (0)") even though the driver files exist in the
+  # store — they're just in the separate mesa.drivers output nothing else pulls in.
+  # systemd.user.sessionVariables (not home.sessionVariables) because GDM execs
+  # Hyprland directly with no login shell involved, so a .profile-sourced sh
+  # script (home.sessionVariables) never reaches it — only variables written to
+  # ~/.config/environment.d/, read by the systemd --user manager itself, do.
+  # Same reasoning covers PATH: GDM's exec of Hyprland inherits systemd --user's
+  # bare default PATH, which has no idea ~/.nix-profile/bin exists, so every bare
+  # exec (kitty, rofi, waybar, ...) fails outright. Hardcoded in full rather than
+  # "...:${PATH}" — systemd's environment.d generator does not expand a self-
+  # referencing ${PATH} against the manager's existing environment; it silently
+  # drops the whole assignment instead (confirmed: the other vars in this same
+  # set DO apply, only PATH was ever missing from `systemctl --user show-environment`).
+  systemd.user.sessionVariables = {
+    LIBGL_DRIVERS_PATH = "${pkgs.mesa.drivers}/lib/dri";
+    __EGL_VENDOR_LIBRARY_FILENAMES = "${pkgs.mesa.drivers}/share/glvnd/egl_vendor.d/50_mesa.json";
+    PATH = "${config.home.homeDirectory}/.nix-profile/bin:/nix/var/nix/profiles/default/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin";
+  };
+
   wayland.windowManager.hyprland = {
     enable = true;
     xwayland.enable = true;
@@ -36,11 +59,14 @@ in
     settings = {
       monitor = ",preferred,auto,1";
 
+      # hyprpaper and hypridle are NOT listed here: their home-manager "services."
+      # modules generate real systemd units tied to hyprland-session.target on their
+      # own. waybar and mako do NOT get that for free despite looking similar:
+      # waybar needs the separate programs.waybar.systemd.enable flag (set below),
+      # and services.mako's module doesn't wire systemd at all — it only writes
+      # ~/.config/mako/config — so mako has to be launched here.
       exec-once = [
-        "waybar"
         "mako"
-        "hyprpaper"
-        "hypridle"
         "nm-applet"
         "blueman-applet"
         "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
@@ -49,6 +75,8 @@ in
       "$terminal" = "kitty";
       "$launcher" = "rofi -show drun";
       "$fileManager" = "kitty -e yazi";
+
+      debug.disable_logs = false;
 
       general = {
         gaps_in = 4;
@@ -84,7 +112,7 @@ in
         "$mod, E, exec, $fileManager"
         "$mod, Q, killactive"
         "$mod SHIFT, Q, exit"
-        "$mod, L, exec, hyprlock"
+        "$mod CTRL, L, exec, hyprlock"
         "$mod, F, fullscreen"
         "$mod, V, togglefloating"
 
@@ -114,6 +142,11 @@ in
         "$mod, right, movefocus, r"
         "$mod, up, movefocus, u"
         "$mod, down, movefocus, d"
+
+        "$mod, h, movefocus, l"
+        "$mod, l, movefocus, r"
+        "$mod, k, movefocus, u"
+        "$mod, j, movefocus, d"
       ];
 
       bindl = [
@@ -136,6 +169,8 @@ in
 
   programs.waybar = {
     enable = true;
+    # Unlike services.hyprpaper/hypridle, waybar's systemd integration is opt-in.
+    systemd.enable = true;
     settings = {
       mainBar = {
         layer = "top";
@@ -213,10 +248,8 @@ in
   services.hyprpaper = {
     enable = true;
     settings = {
-      # Drop a wallpaper file at ~/Pictures/wallpaper.jpg to enable this,
-      # or point preload/wallpaper at whatever image you'd like instead.
-      # preload = [ "~/Pictures/wallpaper.jpg" ];
-      # wallpaper = [ ",~/Pictures/wallpaper.jpg" ];
+      preload = [ "~/Pictures/wallpaper.jpg" ];
+      wallpaper = [ ",~/Pictures/wallpaper.jpg" ];
     };
   };
 
