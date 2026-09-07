@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 let
   mocha = {
@@ -26,6 +26,28 @@ in
     blueman
     polkit_gnome
   ];
+
+  # This has silently failed to get applied three separate times because it's a
+  # manual sudo step with no reminder — see README.md "Hyprland on non-NixOS:
+  # required manual system setup". Rather than trust that it was done, check for
+  # it on every single `home-manager switch` and make it impossible to miss.
+  home.activation.checkHyprlockPam = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    if [ ! -f /etc/pam.d/hyprlock ] || [ ! -e /run/wrappers/bin/unix_chkpwd ]; then
+      echo ""
+      echo "############################################################"
+      echo "# WARNING: hyprlock's PAM setup is missing or incomplete!  #"
+      echo "# The screen lock will NEVER accept your password until    #"
+      echo "# you run (see README.md for why):                         #"
+      echo "#                                                          #"
+      echo "#   sudo cp hyprland/system/pam.d/hyprlock /etc/pam.d/     #"
+      echo "#   sudo cp hyprland/system/tmpfiles.d/nix-pam-wrappers.conf \\"
+      echo "#        /etc/tmpfiles.d/                                 #"
+      echo "#   sudo systemd-tmpfiles --create \\"
+      echo "#        /etc/tmpfiles.d/nix-pam-wrappers.conf             #"
+      echo "############################################################"
+      echo ""
+    fi
+  '';
 
   # On NixOS, hardware.graphics.enable wires these up automatically. Standalone
   # home-manager on a non-NixOS distro has no equivalent, so without this
