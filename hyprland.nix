@@ -1,4 +1,4 @@
-{ pkgs, config, ... }:
+{ pkgs, ... }:
 
 let
   mocha = {
@@ -33,21 +33,10 @@ in
   # EGL vendor ICD, and OpenGL/EGL init silently fails ("no gbm support",
   # "Supported EGL extensions: (0)") even though the driver files exist in the
   # store — they're just in the separate mesa.drivers output nothing else pulls in.
-  # systemd.user.sessionVariables (not home.sessionVariables) because GDM execs
-  # Hyprland directly with no login shell involved, so a .profile-sourced sh
-  # script (home.sessionVariables) never reaches it — only variables written to
-  # ~/.config/environment.d/, read by the systemd --user manager itself, do.
-  # Same reasoning covers PATH: GDM's exec of Hyprland inherits systemd --user's
-  # bare default PATH, which has no idea ~/.nix-profile/bin exists, so every bare
-  # exec (kitty, rofi, waybar, ...) fails outright. Hardcoded in full rather than
-  # "...:${PATH}" — systemd's environment.d generator does not expand a self-
-  # referencing ${PATH} against the manager's existing environment; it silently
-  # drops the whole assignment instead (confirmed: the other vars in this same
-  # set DO apply, only PATH was ever missing from `systemctl --user show-environment`).
+  # Confirmed working via ~/.config/environment.d/ (unlike PATH, see below).
   systemd.user.sessionVariables = {
     LIBGL_DRIVERS_PATH = "${pkgs.mesa.drivers}/lib/dri";
     __EGL_VENDOR_LIBRARY_FILENAMES = "${pkgs.mesa.drivers}/share/glvnd/egl_vendor.d/50_mesa.json";
-    PATH = "${config.home.homeDirectory}/.nix-profile/bin:/nix/var/nix/profiles/default/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin";
   };
 
   wayland.windowManager.hyprland = {
@@ -59,22 +48,24 @@ in
     settings = {
       monitor = ",preferred,auto,1";
 
-      # hyprpaper and hypridle are NOT listed here: their home-manager "services."
-      # modules generate real systemd units tied to hyprland-session.target on their
-      # own. waybar and mako do NOT get that for free despite looking similar:
-      # waybar needs the separate programs.waybar.systemd.enable flag (set below),
-      # and services.mako's module doesn't wire systemd at all — it only writes
-      # ~/.config/mako/config — so mako has to be launched here.
+      # Every exec/bind below uses a full Nix store path rather than a bare command
+      # name. Tried env=PATH,... (Hyprland's own directive, meant to apply to
+      # itself and everything it execs) and systemd.user.sessionVariables.PATH
+      # (~/.config/environment.d/) first — neither actually reached the `/bin/sh -c`
+      # Hyprland's exec dispatcher spawns commands through (confirmed via journal:
+      # "/bin/sh: 1: kitty: not found" even with the env directive active and
+      # verified present in the generated config). Full paths sidestep PATH
+      # resolution entirely, so this can't regress the same way again.
       exec-once = [
-        "mako"
-        "nm-applet"
-        "blueman-applet"
+        "${pkgs.mako}/bin/mako"
+        "${pkgs.networkmanagerapplet}/bin/nm-applet"
+        "${pkgs.blueman}/bin/blueman-applet"
         "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
       ];
 
-      "$terminal" = "kitty";
-      "$launcher" = "rofi -show drun";
-      "$fileManager" = "kitty -e yazi";
+      "$terminal" = "${pkgs.kitty}/bin/kitty";
+      "$launcher" = "${pkgs.rofi-wayland}/bin/rofi -show drun";
+      "$fileManager" = "${pkgs.kitty}/bin/kitty -e ${pkgs.yazi}/bin/yazi";
 
       debug.disable_logs = false;
 
@@ -112,11 +103,11 @@ in
         "$mod, E, exec, $fileManager"
         "$mod, Q, killactive"
         "$mod SHIFT, Q, exit"
-        "$mod CTRL, L, exec, hyprlock"
+        "$mod CTRL, L, exec, ${pkgs.hyprlock}/bin/hyprlock"
         "$mod, F, fullscreen"
         "$mod, V, togglefloating"
 
-        ", Print, exec, grim -g \"$(slurp)\" - | satty --filename - -o ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"
+        ", Print, exec, ${pkgs.grim}/bin/grim -g \"$(${pkgs.slurp}/bin/slurp)\" - | ${pkgs.satty}/bin/satty --filename - -o ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"
 
         "$mod, 1, workspace, 1"
         "$mod, 2, workspace, 2"
@@ -150,14 +141,14 @@ in
       ];
 
       bindl = [
-        ", XF86AudioMute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
+        ", XF86AudioMute, exec, ${pkgs.wireplumber}/bin/wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
       ];
 
       bindle = [
-        ", XF86AudioRaiseVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"
-        ", XF86AudioLowerVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
-        ", XF86MonBrightnessUp, exec, brightnessctl set 5%+"
-        ", XF86MonBrightnessDown, exec, brightnessctl set 5%-"
+        ", XF86AudioRaiseVolume, exec, ${pkgs.wireplumber}/bin/wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"
+        ", XF86AudioLowerVolume, exec, ${pkgs.wireplumber}/bin/wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
+        ", XF86MonBrightnessUp, exec, ${pkgs.brightnessctl}/bin/brightnessctl set 5%+"
+        ", XF86MonBrightnessDown, exec, ${pkgs.brightnessctl}/bin/brightnessctl set 5%-"
       ];
 
       bindm = [
@@ -208,7 +199,9 @@ in
         font-size: 13px;
       }
       window#waybar {
-        background: rgba(0x${mocha.base}, 0.9);
+        /* GTK3's CSS parser (waybar 0.11) accepts rgba() only with decimal
+           components, not 8-digit hex-with-alpha. 30,30,46 = #1e1e2e (mocha base). */
+        background-color: rgba(30, 30, 46, 0.9);
         color: #${mocha.text};
       }
       #workspaces button {
@@ -276,10 +269,14 @@ in
   services.hypridle = {
     enable = true;
     settings = {
+      # hypridle runs as its own systemd service, inheriting the same bare PATH
+      # as everything else here — same fix as Hyprland's own exec dispatcher:
+      # full paths for the Nix-only binaries (hyprlock, hyprctl); pidof/loginctl/
+      # systemctl are standard system utilities already on the bare PATH.
       general = {
-        lock_cmd = "pidof hyprlock || hyprlock";
+        lock_cmd = "pidof hyprlock || ${pkgs.hyprlock}/bin/hyprlock";
         before_sleep_cmd = "loginctl lock-session";
-        after_sleep_cmd = "hyprctl dispatch dpms on";
+        after_sleep_cmd = "${pkgs.hyprland}/bin/hyprctl dispatch dpms on";
       };
       listener = [
         {
@@ -288,8 +285,8 @@ in
         }
         {
           timeout = 330;
-          on-timeout = "hyprctl dispatch dpms off";
-          on-resume = "hyprctl dispatch dpms on";
+          on-timeout = "${pkgs.hyprland}/bin/hyprctl dispatch dpms off";
+          on-resume = "${pkgs.hyprland}/bin/hyprctl dispatch dpms on";
         }
         {
           timeout = 600;
