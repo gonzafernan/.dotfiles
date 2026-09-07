@@ -268,10 +268,30 @@ in
     defaultTimeout = 5000;
   };
 
+  # theme = "catppuccin-mocha" (a bare string) previously did NOT work: home-manager's
+  # rofi module only auto-installs a theme file when `theme` is a real path — a bare
+  # string just emits `@theme "catppuccin-mocha"` into config.rasi with nothing on
+  # disk to back it, so rofi silently fell back to its unstyled default this whole
+  # time. Catppuccin's own rofi theme (github.com/catppuccin/rofi) ships as two
+  # files — a palette (catppuccin-mocha.rasi) and a layout that @imports it
+  # (catppuccin-default.rasi) — vendored under rofi/.local/share/rofi/themes/,
+  # placed via xdg.dataFile to match exactly where the module looks for a
+  # string-named theme (~/.local/share/rofi/themes/, not ~/.config/).
+  xdg.dataFile."rofi/themes/catppuccin-mocha.rasi".source =
+    ./rofi/.local/share/rofi/themes/catppuccin-mocha.rasi;
+  xdg.dataFile."rofi/themes/catppuccin-default.rasi".source =
+    ./rofi/.local/share/rofi/themes/catppuccin-default.rasi;
+
+  # mocha-modern.rasi (a real path, not a bare string) @imports catppuccin-default
+  # and layers font/rounding on top, rather than hand-editing the vendored file —
+  # keeps it a clean diff against upstream if the theme is ever updated. Since
+  # theme is a path here, home-manager auto-installs it itself (unlike the two
+  # xdg.dataFile entries above, which exist only because catppuccin-default and
+  # catppuccin-mocha are referenced *by name* via @import, not passed as `theme`).
   programs.rofi = {
     enable = true;
     package = pkgs.rofi-wayland;
-    theme = "catppuccin-mocha";
+    theme = ./rofi/.local/share/rofi/themes/mocha-modern.rasi;
     extraConfig = {
       show-icons = true;
       display-drun = "Apps";

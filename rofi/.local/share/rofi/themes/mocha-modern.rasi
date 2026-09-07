@@ -1,0 +1,17 @@
+@import "catppuccin-default"
+
+* {
+    font: "JetBrainsMono Nerd Font 16";
+}
+
+window {
+    border-radius: 14px;
+}
+
+inputbar {
+    border-radius: 8px;
+}
+
+element {
+    border-radius: 8px;
+}
