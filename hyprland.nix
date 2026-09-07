@@ -55,10 +55,18 @@ in
   # EGL vendor ICD, and OpenGL/EGL init silently fails ("no gbm support",
   # "Supported EGL extensions: (0)") even though the driver files exist in the
   # store — they're just in the separate mesa.drivers output nothing else pulls in.
-  # Confirmed working via ~/.config/environment.d/ (unlike PATH, see below).
+  # NIXOS_OZONE_WL is a NixOS-convention variable that nixpkgs' google-chrome
+  # (and Electron apps generally) check to opt into native Wayland rendering
+  # instead of falling back to XWayland. Without it, Chrome would render via
+  # XWayland at scale 1 and get upscaled by the compositor to match our
+  # --force-device-scale-factor, which is blurry — native Wayland renders
+  # crisply at the target scale directly.
+  # (XDG_DATA_DIRS is NOT here — confirmed live it's silently refused via
+  # environment.d exactly like PATH was; see the `env` list below instead.)
   systemd.user.sessionVariables = {
     LIBGL_DRIVERS_PATH = "${pkgs.mesa.drivers}/lib/dri";
     __EGL_VENDOR_LIBRARY_FILENAMES = "${pkgs.mesa.drivers}/share/glvnd/egl_vendor.d/50_mesa.json";
+    NIXOS_OZONE_WL = "1";
   };
 
   wayland.windowManager.hyprland = {
@@ -188,7 +196,7 @@ in
       mainBar = {
         layer = "top";
         position = "top";
-        height = 32;
+        height = 42;
         modules-left = [ "hyprland/workspaces" ];
         modules-center = [ "clock" ];
         modules-right = [ "pulseaudio" "network" "battery" "tray" ];
@@ -218,7 +226,7 @@ in
     style = ''
       * {
         font-family: "JetBrainsMono Nerd Font";
-        font-size: 13px;
+        font-size: 20px;
       }
       window#waybar {
         /* GTK3's CSS parser (waybar 0.11) accepts rgba() only with decimal
@@ -238,6 +246,16 @@ in
         color: #${mocha.text};
       }
     '';
+  };
+
+  # waybar starting before the Wayland display is fully up ("cannot open
+  # display") has now exhausted systemd's default restart budget (5 tries in
+  # 10s) twice, leaving it dead until manually restarted. Widening the budget
+  # (not disabling it — a genuinely broken config should still fail loudly)
+  # gives the race more room to resolve itself instead of giving up.
+  systemd.user.services.waybar = {
+    Unit.StartLimitBurst = 20;
+    Service.RestartSec = "1";
   };
 
   services.mako = {
@@ -328,4 +346,5 @@ in
       hyprland.default = [ "hyprland" "gtk" ];
     };
   };
+
 }

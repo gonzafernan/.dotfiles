@@ -21,6 +21,14 @@ git fetcher excludes submodule content by default)
 - Obsidian (config only — the app itself is a manual install at `/opt/obsidian`,
   not managed by Nix)
 - Hyprland (see below)
+- Google Chrome — installed from `pkgsUnstable` (a second `nixpkgs-unstable`
+  flake input, see `flake.nix`), not the main `nixpkgs-24.11` pin: nixpkgs'
+  `google-chrome` derivation fetches one specific `.deb` by URL, and Google
+  routinely removes old versions from its download mirror, so a stable pin
+  404s within weeks. `nixpkgs-unstable` tracks the current version closely
+  enough to actually build. Wrapped with `--force-device-scale-factor=1.5` for
+  this machine's ~240 PPI panel (see `hyprland.nix`'s `NIXOS_OZONE_WL`/
+  `XDG_DATA_DIRS` comments for the rest of what that needed).
 
 ## Hyprland on non-NixOS: required manual system setup
 
