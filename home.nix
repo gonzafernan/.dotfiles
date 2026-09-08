@@ -6,11 +6,10 @@ let
   # 404ing on any pin more than a few weeks old; nixos-unstable tracks the
   # currently-available version closely enough for this to actually build.
   #
-  # --force-device-scale-factor compensates for the ~240 PPI panel: Chrome
-  # renders at scale 1 by default, tiny on this screen, since nothing here
-  # does the HiDPI auto-scaling GNOME did (see hyprland.nix's monitor scale).
-  # commandLineArgs is nixpkgs' own wrapper mechanism for this package, so the
-  # flag applies whether launched via rofi, a taskbar, or the command line.
+  # No --force-device-scale-factor: that was a per-app compensation for the
+  # ~240 PPI panel from before hyprland.nix's `monitor` had a real scale set.
+  # With that scale in place, Chrome (native Wayland via NIXOS_OZONE_WL) reads
+  # it and scales itself automatically — keeping the flag too would double-scale.
   chrome = pkgsUnstable.google-chrome.override {
     # --no-sandbox: Chrome's SUID sandbox helper must be a setuid-root binary,
     # which Nix store files can never be (read-only/immutable) — NixOS solves
@@ -19,7 +18,7 @@ let
     # at today's store hash would need re-applying almost weekly. Disabling the
     # sandbox is the standard low-maintenance answer for Chrome-via-Nix on a
     # non-NixOS, single-user machine (reduced renderer isolation, not "no security").
-    commandLineArgs = "--force-device-scale-factor=1.5 --no-sandbox";
+    commandLineArgs = "--no-sandbox";
   };
 in
 {

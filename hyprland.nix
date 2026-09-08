@@ -90,7 +90,15 @@ in
     systemd.variables = [ "--all" ];
 
     settings = {
-      monitor = ",preferred,auto,1";
+      # 1.5 scale for this ~240 PPI panel: this is the actual systemic fix for
+      # "X app's content is tiny" (waybar, kitty, Chrome, now Obsidian) rather
+      # than patching each app's own font/size setting individually forever —
+      # any properly Wayland-native client (GTK, Qt, Electron via ozone) reads
+      # this and scales itself automatically. Per-app compensations made before
+      # this existed (waybar height/font, kitty font_size, Chrome's
+      # --force-device-scale-factor) are being reverted alongside this, since
+      # stacking both would double-scale.
+      monitor = ",preferred,auto,1.5";
 
       # home.pointerCursor's `size` only reaches home.sessionVariables (the
       # .profile-based mechanism), which — like PATH and XDG_DATA_DIRS — never
@@ -217,7 +225,7 @@ in
       mainBar = {
         layer = "top";
         position = "top";
-        height = 42;
+        height = 32;
         modules-left = [ "hyprland/workspaces" ];
         modules-center = [ "clock" ];
         modules-right = [ "pulseaudio" "network" "battery" "tray" ];
@@ -247,7 +255,7 @@ in
     style = ''
       * {
         font-family: "JetBrainsMono Nerd Font";
-        font-size: 20px;
+        font-size: 13px;
       }
       window#waybar {
         /* GTK3's CSS parser (waybar 0.11) accepts rgba() only with decimal
