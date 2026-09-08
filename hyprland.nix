@@ -27,6 +27,20 @@ in
     polkit_gnome
   ];
 
+  # Without a cursor theme configured anywhere, Hyprland falls back to its own
+  # built-in default — the Hyprland logo itself, rendered as the pointer. This
+  # symlinks the theme to ~/.icons/default/ (home-manager's home.pointerCursor
+  # module), which is the exact fallback location Hyprland already tries and
+  # failed to find anything in (confirmed in an earlier crash log: "Hyprcursor
+  # failed loading theme \"\", falling back to Xcursor" -> "XCursor failed
+  # finding any shapes in theme \"default\""). No env var propagation needed —
+  # sidesteps that whole class of problem entirely.
+  home.pointerCursor = {
+    package = pkgs.catppuccin-cursors.mochaLavender;
+    name = "catppuccin-mocha-lavender-cursors";
+    size = 32;
+  };
+
   # This has silently failed to get applied three separate times because it's a
   # manual sudo step with no reminder — see README.md "Hyprland on non-NixOS:
   # required manual system setup". Rather than trust that it was done, check for
@@ -77,6 +91,13 @@ in
 
     settings = {
       monitor = ",preferred,auto,1";
+
+      # home.pointerCursor's `size` only reaches home.sessionVariables (the
+      # .profile-based mechanism), which — like PATH and XDG_DATA_DIRS — never
+      # reaches a GDM-launched Hyprland session. Unlike those, XCURSOR_SIZE is
+      # read directly by Hyprland's own process (not by an exec'd child via
+      # /bin/sh -c), so Hyprland's own `env` directive reaches it fine here.
+      env = [ "XCURSOR_SIZE,32" ];
 
       # Every exec/bind below uses a full Nix store path rather than a bare command
       # name. Tried env=PATH,... (Hyprland's own directive, meant to apply to
