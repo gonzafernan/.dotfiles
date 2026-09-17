@@ -41,6 +41,26 @@ in
     size = 32;
   };
 
+  # Themes the GTK3/GTK4 apps in the "lighter" Wifi/Bluetooth setup below
+  # (nm-applet's connection menu, blueman-manager) to match everything else —
+  # variant/accents match the mocha/lavender scheme used throughout this file.
+  # GTK3 apps read this via ~/.config/gtk-3.0/settings.ini regardless of dconf.
+  gtk = {
+    enable = true;
+    theme = {
+      name = "catppuccin-mocha-lavender-standard";
+      package = pkgs.catppuccin-gtk.override {
+        variant = "mocha";
+        accents = [ "lavender" ];
+      };
+    };
+    cursorTheme = {
+      name = "catppuccin-mocha-lavender-cursors";
+      package = pkgs.catppuccin-cursors.mochaLavender;
+      size = 32;
+    };
+  };
+
   # This has silently failed to get applied three separate times because it's a
   # manual sudo step with no reminder — see README.md "Hyprland on non-NixOS:
   # required manual system setup". Rather than trust that it was done, check for
@@ -165,6 +185,14 @@ in
         "$mod CTRL, L, exec, ${pkgs.hyprlock}/bin/hyprlock"
         "$mod, F, fullscreen"
         "$mod, V, togglefloating"
+
+        # Full Bluetooth device manager (pairing, trust, connect) — the applet's
+        # own tray menu is fine for quick toggles but cramped for pairing new
+        # devices. nm-connection-editor for the same reason on the network side:
+        # nm-applet's tray dropdown already handles day-to-day Wifi connecting,
+        # this is for VPNs/static IP/anything needing more than a quick-connect.
+        "$mod, B, exec, ${pkgs.blueman}/bin/blueman-manager"
+        "$mod, N, exec, ${pkgs.networkmanagerapplet}/bin/nm-connection-editor"
 
         ", Print, exec, ${pkgs.grim}/bin/grim -g \"$(${pkgs.slurp}/bin/slurp)\" - | ${pkgs.satty}/bin/satty --filename - -o ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"
 
