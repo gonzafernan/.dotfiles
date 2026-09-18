@@ -84,6 +84,14 @@ in
     theme = builtins.fromTOML (builtins.readFile ./yazi/.config/yazi/theme.toml);
   };
   xdg.configFile."yazi/package.toml".source = ./yazi/.config/yazi/package.toml;
+  # theme.toml's [flavor] references catppuccin-mocha, but that's yazi's own
+  # package manager's job to fetch (`ya pkg install`) — home-manager only ever
+  # wired up yazi.toml/theme.toml/package.toml themselves, never this. The
+  # actual flavor.toml was already vendored in this repo since before the Nix
+  # migration (July 2025, GNU Stow era) but never referenced, so it silently
+  # sat unused until yazi errored looking for it at ~/.config/yazi/flavors/.
+  xdg.configFile."yazi/flavors/catppuccin-mocha.yazi".source =
+    ./yazi/.config/yazi/flavors/catppuccin-mocha.yazi;
 
   xdg.configFile."nvim".source = ./nvim/.config/nvim;
 
