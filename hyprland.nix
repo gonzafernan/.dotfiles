@@ -120,6 +120,9 @@ in
       # stacking both would double-scale.
       monitor = ",preferred,auto,1.5";
 
+      # Vivado's Java main window asks to float at a size larger than the screen.
+      windowrulev2 = [ "tile, class:^(Vivado)$, title:.*Vivado [0-9.]+$" ];
+
       # home.pointerCursor's `size` only reaches home.sessionVariables (the
       # .profile-based mechanism), which — like PATH and XDG_DATA_DIRS — never
       # reaches a GDM-launched Hyprland session. Unlike those, XCURSOR_SIZE is

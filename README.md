@@ -26,9 +26,14 @@ git fetcher excludes submodule content by default)
   `google-chrome` derivation fetches one specific `.deb` by URL, and Google
   routinely removes old versions from its download mirror, so a stable pin
   404s within weeks. `nixpkgs-unstable` tracks the current version closely
-  enough to actually build. Wrapped with `--force-device-scale-factor=1.5` for
-  this machine's ~240 PPI panel (see `hyprland.nix`'s `NIXOS_OZONE_WL`/
-  `XDG_DATA_DIRS` comments for the rest of what that needed).
+  enough to actually build. Wrapped with `--no-sandbox` (see `home.nix` for
+  why); scales itself automatically via `hyprland.nix`'s `monitor` scale and
+  `NIXOS_OZONE_WL`, no per-app scale flag needed.
+- Vivado (Xilinx Design Suite) — config only, same as Obsidian: a manual
+  install at `/tools/Xilinx/Vivado/2024.2` (proprietary, licensed, not in
+  nixpkgs, not something we'd package ourselves), not managed by Nix at all.
+  Only its `.desktop` launcher entry is tracked (`home.nix`), so rofi can find
+  it — bump the version number there if Vivado is ever upgraded.
 
 ## Hyprland on non-NixOS: required manual system setup
 
