@@ -425,6 +425,19 @@ in
 
   services.cliphist.enable = true;
 
+  # Auto-mounts SD cards/external drives on insert (udisks2 does the actual
+  # mounting; udisks2 itself is a system service, already present since GNOME
+  # depends on it — this just adds the piece GNOME's own file manager would
+  # normally provide: something that actually triggers the mount and notifies).
+  # tray = "always" (not the default "auto") so the icon is consistently there
+  # rather than appearing/disappearing as devices come and go.
+  services.udiskie = {
+    enable = true;
+    tray = "always";
+    notify = true;
+    automount = true;
+  };
+
   xdg.portal = {
     enable = true;
     extraPortals = [ pkgs.xdg-desktop-portal-hyprland ];
