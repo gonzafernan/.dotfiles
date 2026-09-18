@@ -140,6 +140,7 @@ in
         "${pkgs.networkmanagerapplet}/bin/nm-applet"
         "${pkgs.blueman}/bin/blueman-applet"
         "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
+        "${pkgs.coreutils}/bin/sleep 1 && ${pkgs.hyprland}/bin/hyprctl keyword animations:enabled true"
       ];
 
       "$terminal" = "${pkgs.kitty}/bin/kitty";
@@ -166,7 +167,14 @@ in
         };
       };
 
-      animations.enabled = true;
+      # false here, then flipped true a moment after login (exec-once below) —
+      # this is the standard workaround (confirmed via a Hyprland maintainer
+      # discussion, github.com/hyprwm/Hyprland/discussions/6866; there's no
+      # dedicated "disable just the first-launch animation" flag) for the
+      # brief fade Hyprland otherwise plays on its very first frame. Normal
+      # animations (window open/close, workspace switch) resume immediately
+      # after that ~1s delay — only the initial startup transition is skipped.
+      animations.enabled = false;
 
       input = {
         kb_layout = "us";
@@ -266,54 +274,88 @@ in
         height = 32;
         modules-left = [ "hyprland/workspaces" ];
         modules-center = [ "clock" ];
-        modules-right = [ "pulseaudio" "network" "battery" "tray" ];
+        # No "network" module here — nm-applet's own tray icon (in "tray"
+        # below) already shows connection status *and* gives a click-to-connect
+        # dropdown, which a plain waybar status module can't do. Having both
+        # showed the wifi icon twice for no added functionality.
+        modules-right = [ "pulseaudio" "battery" "tray" ];
 
         "hyprland/workspaces" = {
           format = "{icon}";
           on-click = "activate";
         };
         clock.format = "{:%a %d %b  %H:%M}";
+        # Icon-only (no percentage number) — all glyphs below are Material
+        # Design Icons, verified directly against the installed font file
+        # (fontTools cmap dump) rather than guessed, so these are confirmed to
+        # exist rather than risking tofu boxes for an unverified codepoint.
         battery = {
-          format = "{icon} {capacity}%";
-          format-icons = [ "" "" "" "" "" ];
+          format = "{icon}";
+          # Same {icon} template while charging, but format-icons.charging
+          # gives it its own level-aware icon set (a filled-battery-with-bolt
+          # progression) instead of one flat "plugged in" glyph regardless of
+          # charge — so charging state AND level are both visible at a glance.
+          format-charging = "{icon}";
+          format-icons = {
+            charging = [ "󰢜" "󰂇" "󰢝" "󰂊" "󰂅" ];
+            default = [ "󰂎" "󰁻" "󰁾" "󰂁" "󰁹" ];
+          };
         };
-        network = {
-          format-wifi = " {essid}";
-          format-ethernet = " connected";
-          format-disconnected = "⚠ disconnected";
-        };
+        # Icon-only, matching battery — MDI volume set, verified
+        # against the installed font the same way as the others above.
         pulseaudio = {
-          format = "{icon} {volume}%";
-          format-muted = " muted";
-          format-icons.default = [ "" "" "" ];
+          format = "{icon}";
+          format-muted = "󰖁";
+          format-icons.default = [ "󰕿" "󰖀" "󰕾" ];
         };
         tray.spacing = 8;
       };
     };
+    # Following the pattern established for rofi/GTK: use the official
+    # catppuccin/waybar theme file (@define-color palette, vendored below)
+    # rather than hand-writing hex strings through Nix interpolation — @name
+    # color refs are plain GTK CSS, resolved by waybar itself, not Nix.
+    # (A pill/chip module style was tried and reverted — flat on the bar,
+    # matching the original look, is what's actually wanted here.)
     style = ''
+      @import "mocha.css";
+
       * {
         font-family: "JetBrainsMono Nerd Font";
         font-size: 13px;
       }
       window#waybar {
-        /* GTK3's CSS parser (waybar 0.11) accepts rgba() only with decimal
-           components, not 8-digit hex-with-alpha. 30,30,46 = #1e1e2e (mocha base). */
-        background-color: rgba(30, 30, 46, 0.9);
-        color: #${mocha.text};
+        background-color: alpha(@base, 0.9);
+        color: @text;
+      }
+      #workspaces {
+        margin-left: 10px;
       }
       #workspaces button {
-        color: #${mocha.overlay0};
+        color: @overlay0;
         padding: 0 6px;
       }
       #workspaces button.active {
-        color: #${mocha.lavender};
+        color: @lavender;
       }
-      #clock, #battery, #network, #pulseaudio, #tray {
+      #clock {
+        font-weight: bold;
+        color: @lavender;
         padding: 0 10px;
-        color: #${mocha.text};
+      }
+      #battery, #pulseaudio, #tray {
+        padding: 0 10px;
+        color: @text;
+      }
+      #battery.charging {
+        color: @green;
+      }
+      #pulseaudio.muted {
+        color: @overlay0;
       }
     '';
   };
+  xdg.configFile."waybar/mocha.css".source = ./waybar/.config/waybar/mocha.css;
 
   # waybar starting before the Wayland display is fully up ("cannot open
   # display") has now exhausted systemd's default restart budget (5 tries in
