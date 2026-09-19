@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ pkgs, pkgsUnstable, lib, ... }:
 
 let
   mocha = {
@@ -148,7 +148,7 @@ in
 
       "$terminal" = "${pkgs.kitty}/bin/kitty";
       "$launcher" = "${pkgs.rofi-wayland}/bin/rofi -show drun";
-      "$fileManager" = "${pkgs.kitty}/bin/kitty -e ${pkgs.yazi}/bin/yazi";
+      "$fileManager" = "${pkgs.kitty}/bin/kitty -e ${pkgsUnstable.yazi}/bin/yazi";
 
       debug.disable_logs = false;
 

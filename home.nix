@@ -106,8 +106,10 @@ in
 
   programs.yazi = {
     enable = true;
+    package = pkgsUnstable.yazi;
     settings = builtins.fromTOML (builtins.readFile ./yazi/.config/yazi/yazi.toml);
     theme = builtins.fromTOML (builtins.readFile ./yazi/.config/yazi/theme.toml);
+    keymap = builtins.fromTOML (builtins.readFile ./yazi/.config/yazi/keymap.toml);
   };
   xdg.configFile."yazi/package.toml".source = ./yazi/.config/yazi/package.toml;
   # theme.toml's [flavor] references catppuccin-mocha, but that's yazi's own

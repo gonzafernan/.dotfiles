@@ -1,0 +1,4 @@
+[[mgr.prepend_keymap]]
+on = ["c", "z"]
+run = "shell 'zip -r .zip %s' --cursor=7 --interactive"
+desc = "Zip selected files"
