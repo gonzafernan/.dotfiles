@@ -59,6 +59,8 @@ in
     pyright
     (lib.hiPrio pkgsUnstable.python3)
     pkgsUnstable.python312
+    pkgsUnstable.verible
+    pkgsUnstable.stylua
     # Was apt-installed (/usr/bin/zathura) — moved to Nix for the same
     # reproducibility reason. Unlike the cargo tools above, /usr/bin already
     # comes after ~/.nix-profile/bin on PATH, so this alone makes the Nix
