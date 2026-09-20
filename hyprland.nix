@@ -146,9 +146,9 @@ in
         "${pkgs.coreutils}/bin/sleep 1 && ${pkgs.hyprland}/bin/hyprctl keyword animations:enabled true"
       ];
 
-      "$terminal" = "${pkgs.kitty}/bin/kitty";
+      "$terminal" = "${pkgsUnstable.kitty}/bin/kitty";
       "$launcher" = "${pkgs.rofi-wayland}/bin/rofi -show drun";
-      "$fileManager" = "${pkgs.kitty}/bin/kitty -e ${pkgsUnstable.yazi}/bin/yazi";
+      "$fileManager" = "${pkgsUnstable.kitty}/bin/kitty -e ${pkgsUnstable.yazi}/bin/yazi";
 
       debug.disable_logs = false;
 

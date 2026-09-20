@@ -102,6 +102,7 @@ in
 
   programs.kitty = {
     enable = true;
+    package = pkgsUnstable.kitty;
     extraConfig = builtins.readFile ./kitty/.config/kitty/kitty.conf;
   };
   xdg.configFile."kitty/mocha.conf".source = ./kitty/.config/kitty/mocha.conf;
