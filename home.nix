@@ -55,6 +55,8 @@ in
     typst
     tinymist
     typstyle
+    pkgsUnstable.iverilog
+    gtkwave
     ruff
     pyright
     (lib.hiPrio pkgsUnstable.python3)
