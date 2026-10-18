@@ -285,11 +285,21 @@ in
       bar.main = {
         margin_edge = 8;
         margin_ends = 8;
-        start = [ "launcher" "workspaces" ];
+        start = [ "workspaces" ];
         center = [ "clock" ];
         end = [ "media" "tray" "notifications" "clipboard" "network" "bluetooth" "volume" "battery" "control-center" "session" ];
       };
-      widget.media.hide_when_no_media = true;
+      widget = {
+        media.hide_when_no_media = true;
+        volume.show_label = false;
+        network.show_label = false;
+        bluetooth.show_label = false;
+        battery.display_mode = "graphic";
+        clock = {
+          format = "{:%a %d %b · %H:%M}";
+          font_weight = 600;
+        };
+      };
       idle.behavior = {
         lock = {
           timeout = 300;
