@@ -34,10 +34,15 @@
       pkgsUnstable = import nixpkgs-unstable { inherit system config; };
       # The lock screen hardcodes the "login" PAM service, whose Ubuntu stack Nix's
       # libpam can't parse (see README); give it its own /etc/pam.d/noctalia instead.
+      # Hyprland 0.45 clears focus grabs as soon as they start, closing every panel
+      # on open; skipping the protocol falls back to noctalia's click shield.
       noctaliaPkg = noctalia.packages.${system}.default.overrideAttrs (old: {
         postPatch = old.postPatch + ''
           substituteInPlace src/shell/lockscreen/lock_screen.cpp \
             --replace-fail 'pamService = "login"' 'pamService = "noctalia"'
+          substituteInPlace src/wayland/wayland_connection.cpp \
+            --replace-fail 'if (interfaceName == hyprland_focus_grab_manager_v1_interface.name) {' \
+                           'if (false && interfaceName == hyprland_focus_grab_manager_v1_interface.name) {'
         '';
       });
     in {
