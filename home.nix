@@ -73,7 +73,7 @@ in
   ];
 
   # xdg.desktopEntries would install this under ~/.nix-profile/share/applications,
-  # which needs ~/.nix-profile/share in XDG_DATA_DIRS to be found by rofi/etc —
+  # which needs ~/.nix-profile/share in XDG_DATA_DIRS to be found by launchers —
   # and that variable is silently refused via both systemd's environment.d and
   # Hyprland's own `env` directive on this system (same class of failure PATH
   # hit, see hyprland.nix). ~/.local/share/applications (XDG_DATA_HOME) needs no
@@ -83,7 +83,7 @@ in
     "${chrome}/share/applications/google-chrome.desktop";
 
   # Vivado is a manual Xilinx install (like Obsidian), not Nix-managed — no
-  # .desktop file ships with it at all, so rofi had no way to find it. Same
+  # .desktop file ships with it at all, so launchers had no way to find it. Same
   # xdg.dataFile-into-~/.local/share/applications approach as Chrome above,
   # for the same reason (guaranteed discovery regardless of XDG_DATA_DIRS).
   # The version number is hardcoded (2024.2) same as Obsidian's /opt path is

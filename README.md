@@ -32,13 +32,13 @@ git fetcher excludes submodule content by default)
 - Vivado (Xilinx Design Suite) — config only, same as Obsidian: a manual
   install at `/tools/Xilinx/Vivado/2024.2` (proprietary, licensed, not in
   nixpkgs, not something we'd package ourselves), not managed by Nix at all.
-  Only its `.desktop` launcher entry is tracked (`home.nix`), so rofi can find
+  Only its `.desktop` launcher entry is tracked (`home.nix`), so the launcher can find
   it — bump the version number there if Vivado is ever upgraded.
 
 ## Hyprland on non-NixOS: required manual system setup
 
 Hyprland itself and its whole ecosystem (the noctalia shell — bar, notifications,
-lock screen, idle, wallpaper — plus rofi, ...) are fully declared in `hyprland.nix`. But a few things live outside
+lock screen, idle, wallpaper, launcher, ...) are fully declared in `hyprland.nix`. But a few things live outside
 what a per-user home-manager install can reach — system paths and group
 membership — and have no Nix-managed equivalent on a non-NixOS distro. These are
 one-time steps to redo on a fresh machine (or after a reinstall):
