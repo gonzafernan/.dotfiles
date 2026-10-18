@@ -37,8 +37,8 @@ git fetcher excludes submodule content by default)
 
 ## Hyprland on non-NixOS: required manual system setup
 
-Hyprland itself and its whole ecosystem (waybar, mako, hyprlock, hyprpaper,
-hypridle, ...) are fully declared in `hyprland.nix`. But a few things live outside
+Hyprland itself and its whole ecosystem (the noctalia shell — bar, notifications,
+lock screen, idle, wallpaper — plus rofi, ...) are fully declared in `hyprland.nix`. But a few things live outside
 what a per-user home-manager install can reach — system paths and group
 membership — and have no Nix-managed equivalent on a non-NixOS distro. These are
 one-time steps to redo on a fresh machine (or after a reinstall):
@@ -56,13 +56,14 @@ one-time steps to redo on a fresh machine (or after a reinstall):
    sudo cp hyprland/system/wayland-sessions/hyprland.desktop /usr/share/wayland-sessions/
    ```
 
-3. **hyprlock's PAM setup.** Nix's own PAM library (linked into Nix-built
-   hyprlock) can't parse Debian/Ubuntu's `@include` directive used throughout
-   `/etc/pam.d/*`, so without its own config hyprlock fails every login attempt
-   with `pam_authenticate failed` — **regardless of the password**, since the
-   config never even parses:
+3. **noctalia's lock screen PAM setup.** Nix's own PAM library (linked into
+   Nix-built noctalia) can't parse Debian/Ubuntu's `@include` directive used
+   throughout `/etc/pam.d/*`, so without its own config the lock screen fails
+   every unlock attempt — **regardless of the password**, since the config never
+   even parses. Upstream hardcodes the `login` service (which TTY login also
+   uses, so it must stay untouched); `flake.nix` patches it to `noctalia`:
    ```sh
-   sudo cp hyprland/system/pam.d/hyprlock /etc/pam.d/hyprlock
+   sudo cp hyprland/system/pam.d/noctalia /etc/pam.d/noctalia
    ```
    Separately, Nix's `pam_unix.so` has `/run/wrappers/bin/unix_chkpwd` hardcoded
    as the helper it execs to check the password against `/etc/shadow` — a
@@ -74,7 +75,8 @@ one-time steps to redo on a fresh machine (or after a reinstall):
    sudo systemd-tmpfiles --create /etc/tmpfiles.d/nix-pam-wrappers.conf
    ```
 
-**If hyprlock ever gets stuck again** (PAM misconfigured, screen locked, password
+**If the lock screen ever gets stuck** (PAM misconfigured, screen locked, password
 not accepted): switch to a TTY (Ctrl+Alt+F3), log in there (unaffected — it uses
-the system's own PAM stack, not Nix's), and run `pkill hyprlock` to force it closed
-without needing to authenticate.
+the system's own PAM stack, not Nix's), find the Hyprland session with
+`loginctl list-sessions` and run `loginctl unlock-session <id>` — noctalia unlocks
+on logind's Unlock signal without needing to authenticate.

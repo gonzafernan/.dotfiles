@@ -1,4 +1,4 @@
-{ pkgs, pkgsUnstable, lib, ... }:
+{ pkgs, pkgsUnstable, noctaliaPkg, lib, ... }:
 
 let
   mocha = {
@@ -41,8 +41,8 @@ in
     size = 32;
   };
 
-  # Themes the GTK3/GTK4 apps in the "lighter" Wifi/Bluetooth setup below
-  # (nm-applet's connection menu, blueman-manager) to match everything else —
+  # Themes the GTK3/GTK4 apps used for advanced Wifi/Bluetooth setup below
+  # (nm-connection-editor, blueman-manager) to match everything else —
   # variant/accents match the mocha/lavender scheme used throughout this file.
   # GTK3 apps read this via ~/.config/gtk-3.0/settings.ini regardless of dconf.
   gtk = {
@@ -65,15 +65,15 @@ in
   # manual sudo step with no reminder — see README.md "Hyprland on non-NixOS:
   # required manual system setup". Rather than trust that it was done, check for
   # it on every single `home-manager switch` and make it impossible to miss.
-  home.activation.checkHyprlockPam = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    if [ ! -f /etc/pam.d/hyprlock ] || [ ! -e /run/wrappers/bin/unix_chkpwd ]; then
+  home.activation.checkNoctaliaPam = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    if [ ! -f /etc/pam.d/noctalia ] || [ ! -e /run/wrappers/bin/unix_chkpwd ]; then
       echo ""
       echo "############################################################"
-      echo "# WARNING: hyprlock's PAM setup is missing or incomplete!  #"
+      echo "# WARNING: noctalia's PAM setup is missing or incomplete!  #"
       echo "# The screen lock will NEVER accept your password until    #"
       echo "# you run (see README.md for why):                         #"
       echo "#                                                          #"
-      echo "#   sudo cp hyprland/system/pam.d/hyprlock /etc/pam.d/     #"
+      echo "#   sudo cp hyprland/system/pam.d/noctalia /etc/pam.d/     #"
       echo "#   sudo cp hyprland/system/tmpfiles.d/nix-pam-wrappers.conf \\"
       echo "#        /etc/tmpfiles.d/                                 #"
       echo "#   sudo systemd-tmpfiles --create \\"
@@ -145,9 +145,6 @@ in
       # verified present in the generated config). Full paths sidestep PATH
       # resolution entirely, so this can't regress the same way again.
       exec-once = [
-        "${pkgs.mako}/bin/mako"
-        "${pkgs.networkmanagerapplet}/bin/nm-applet"
-        "${pkgs.blueman}/bin/blueman-applet"
         "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
         "${pkgs.coreutils}/bin/sleep 1 && ${pkgs.hyprland}/bin/hyprctl keyword animations:enabled true"
       ];
@@ -157,6 +154,10 @@ in
       "$fileManager" = "${pkgsUnstable.kitty}/bin/kitty -e ${pkgsUnstable.yazi}/bin/yazi";
 
       debug.disable_logs = false;
+
+      # Lets a restarted noctalia (systemd Restart=on-failure) take back the lock
+      # if it crashes while locked, instead of leaving the session stuck.
+      misc.allow_session_lock_restore = true;
 
       general = {
         gaps_in = 4;
@@ -200,15 +201,12 @@ in
         "$mod, E, exec, $fileManager"
         "$mod, Q, killactive"
         "$mod SHIFT, Q, exit"
-        "$mod CTRL, L, exec, ${pkgs.hyprlock}/bin/hyprlock"
+        "$mod CTRL, L, exec, ${noctaliaPkg}/bin/noctalia msg session lock"
         "$mod, F, fullscreen"
         "$mod, V, togglefloating"
 
-        # Full Bluetooth device manager (pairing, trust, connect) — the applet's
-        # own tray menu is fine for quick toggles but cramped for pairing new
-        # devices. nm-connection-editor for the same reason on the network side:
-        # nm-applet's tray dropdown already handles day-to-day Wifi connecting,
-        # this is for VPNs/static IP/anything needing more than a quick-connect.
+        # Full Bluetooth/network managers for pairing, VPNs, static IPs — anything
+        # beyond the quick toggles in noctalia's control center.
         "$mod, B, exec, ${pkgs.blueman}/bin/blueman-manager"
         "$mod, N, exec, ${pkgs.networkmanagerapplet}/bin/nm-connection-editor"
 
@@ -273,118 +271,35 @@ in
     };
   };
 
-  programs.waybar = {
+  programs.noctalia = {
     enable = true;
-    # Unlike services.hyprpaper/hypridle, waybar's systemd integration is opt-in.
+    package = noctaliaPkg;
     systemd.enable = true;
     settings = {
-      mainBar = {
-        layer = "top";
-        position = "top";
-        height = 32;
-        modules-left = [ "hyprland/workspaces" ];
-        modules-center = [ "clock" ];
-        # No "network" module here — nm-applet's own tray icon (in "tray"
-        # below) already shows connection status *and* gives a click-to-connect
-        # dropdown, which a plain waybar status module can't do. Having both
-        # showed the wifi icon twice for no added functionality.
-        modules-right = [ "pulseaudio" "battery" "tray" ];
-
-        "hyprland/workspaces" = {
-          format = "{icon}";
-          on-click = "activate";
+      theme = {
+        mode = "dark";
+        source = "builtin";
+        builtin = "Catppuccin";
+      };
+      wallpaper.default.path = "${./wallpapers/wallpaper.jpg}";
+      idle.behavior = {
+        lock = {
+          timeout = 300;
+          action = "lock";
+          enabled = true;
         };
-        clock.format = "{:%a %d %b  %H:%M}";
-        # Icon-only (no percentage number) — all glyphs below are Material
-        # Design Icons, verified directly against the installed font file
-        # (fontTools cmap dump) rather than guessed, so these are confirmed to
-        # exist rather than risking tofu boxes for an unverified codepoint.
-        battery = {
-          format = "{icon}";
-          # Same {icon} template while charging, but format-icons.charging
-          # gives it its own level-aware icon set (a filled-battery-with-bolt
-          # progression) instead of one flat "plugged in" glyph regardless of
-          # charge — so charging state AND level are both visible at a glance.
-          format-charging = "{icon}";
-          format-icons = {
-            charging = [ "󰢜" "󰂇" "󰢝" "󰂊" "󰂅" ];
-            default = [ "󰂎" "󰁻" "󰁾" "󰂁" "󰁹" ];
-          };
+        screen-off = {
+          timeout = 330;
+          action = "screen_off";
+          enabled = true;
         };
-        # Icon-only, matching battery — MDI volume set, verified
-        # against the installed font the same way as the others above.
-        pulseaudio = {
-          format = "{icon}";
-          format-muted = "󰖁";
-          format-icons.default = [ "󰕿" "󰖀" "󰕾" ];
+        suspend = {
+          timeout = 600;
+          action = "suspend";
+          enabled = true;
         };
-        tray.spacing = 8;
       };
     };
-    # Following the pattern established for rofi/GTK: use the official
-    # catppuccin/waybar theme file (@define-color palette, vendored below)
-    # rather than hand-writing hex strings through Nix interpolation — @name
-    # color refs are plain GTK CSS, resolved by waybar itself, not Nix.
-    # (A pill/chip module style was tried and reverted — flat on the bar,
-    # matching the original look, is what's actually wanted here.)
-    style = ''
-      @import "mocha.css";
-
-      * {
-        font-family: "JetBrainsMono Nerd Font";
-        font-size: 13px;
-      }
-      window#waybar {
-        background-color: alpha(@base, 0.9);
-        color: @text;
-      }
-      #workspaces {
-        margin-left: 10px;
-      }
-      #workspaces button {
-        color: @overlay0;
-        padding: 0 6px;
-      }
-      #workspaces button.active {
-        color: @lavender;
-      }
-      #clock {
-        font-weight: bold;
-        color: @lavender;
-        padding: 0 10px;
-      }
-      #battery, #pulseaudio, #tray {
-        padding: 0 10px;
-        color: @text;
-      }
-      #battery.charging {
-        color: @green;
-      }
-      #pulseaudio.muted {
-        color: @overlay0;
-      }
-    '';
-  };
-  xdg.configFile."waybar/mocha.css".source = ./waybar/.config/waybar/mocha.css;
-
-  # waybar starting before the Wayland display is fully up ("cannot open
-  # display") has now exhausted systemd's default restart budget (5 tries in
-  # 10s) twice, leaving it dead until manually restarted. Widening the budget
-  # (not disabling it — a genuinely broken config should still fail loudly)
-  # gives the race more room to resolve itself instead of giving up.
-  systemd.user.services.waybar = {
-    Unit.StartLimitBurst = 20;
-    Service.RestartSec = "1";
-  };
-
-  services.mako = {
-    enable = true;
-    backgroundColor = "#${mocha.base}";
-    textColor = "#${mocha.text}";
-    borderColor = "#${mocha.lavender}";
-    borderSize = 2;
-    borderRadius = 8;
-    defaultTimeout = 5000;
   };
 
   # theme = "catppuccin-mocha" (a bare string) previously did NOT work: home-manager's
@@ -416,66 +331,6 @@ in
       display-drun = "Apps";
     };
   };
-
-  services.hyprpaper = {
-    enable = true;
-    settings = {
-      preload = [ "~/Pictures/wallpaper.jpg" ];
-      wallpaper = [ ",~/Pictures/wallpaper.jpg" ];
-    };
-  };
-
-  programs.hyprlock = {
-    enable = true;
-    settings = {
-      background = [
-        {
-          path = "screenshot";
-          blur_passes = 2;
-        }
-      ];
-      input-field = [
-        {
-          size = "250, 50";
-          outer_color = "rgb(${mocha.lavender})";
-          inner_color = "rgb(${mocha.surface0})";
-          font_color = "rgb(${mocha.text})";
-        }
-      ];
-    };
-  };
-
-  services.hypridle = {
-    enable = true;
-    settings = {
-      # hypridle runs as its own systemd service, inheriting the same bare PATH
-      # as everything else here — same fix as Hyprland's own exec dispatcher:
-      # full paths for the Nix-only binaries (hyprlock, hyprctl); pidof/loginctl/
-      # systemctl are standard system utilities already on the bare PATH.
-      general = {
-        lock_cmd = "pidof hyprlock || ${pkgs.hyprlock}/bin/hyprlock";
-        before_sleep_cmd = "loginctl lock-session";
-        after_sleep_cmd = "${pkgs.hyprland}/bin/hyprctl dispatch dpms on";
-      };
-      listener = [
-        {
-          timeout = 300;
-          on-timeout = "loginctl lock-session";
-        }
-        {
-          timeout = 330;
-          on-timeout = "${pkgs.hyprland}/bin/hyprctl dispatch dpms off";
-          on-resume = "${pkgs.hyprland}/bin/hyprctl dispatch dpms on";
-        }
-        {
-          timeout = 600;
-          on-timeout = "systemctl suspend";
-        }
-      ];
-    };
-  };
-
-  services.cliphist.enable = true;
 
   # Auto-mounts SD cards/external drives on insert (udisks2 does the actual
   # mounting; udisks2 itself is a system service, already present since GNOME

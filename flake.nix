@@ -18,9 +18,11 @@
       url = "github:nix-community/home-manager/release-24.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # No nixpkgs follows: noctalia only builds against nixos-unstable.
+    noctalia.url = "github:noctalia-dev/noctalia-shell/v5.3.0";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, noctalia, ... }:
     let
       system = "x86_64-linux";
       # Narrow unfree allowance (not a blanket `allowUnfree = true`) so adding one
@@ -30,11 +32,19 @@
         builtins.elem (nixpkgs.lib.getName pkg) [ "google-chrome" ];
       pkgs = import nixpkgs { inherit system config; };
       pkgsUnstable = import nixpkgs-unstable { inherit system config; };
+      # The lock screen hardcodes the "login" PAM service, whose Ubuntu stack Nix's
+      # libpam can't parse (see README); give it its own /etc/pam.d/noctalia instead.
+      noctaliaPkg = noctalia.packages.${system}.default.overrideAttrs (old: {
+        postPatch = old.postPatch + ''
+          substituteInPlace src/shell/lockscreen/lock_screen.cpp \
+            --replace-fail 'pamService = "login"' 'pamService = "noctalia"'
+        '';
+      });
     in {
       homeConfigurations.ggf = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
-        extraSpecialArgs = { inherit pkgsUnstable; };
-        modules = [ ./home.nix ];
+        extraSpecialArgs = { inherit pkgsUnstable noctaliaPkg; };
+        modules = [ noctalia.homeModules.default ./home.nix ];
       };
     };
 }
