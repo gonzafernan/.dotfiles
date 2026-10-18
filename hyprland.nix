@@ -118,7 +118,13 @@ in
       # this existed (waybar height/font, kitty font_size, Chrome's
       # --force-device-scale-factor) are being reverted alongside this, since
       # stacking both would double-scale.
-      monitor = ",preferred,auto,1.5";
+      #
+      # HDMI-A-1's 1280x720 has no clean divisor at 1.5, so it gets its own scale
+      # instead of the wildcard (Hyprland warned and fell back to 1.0 anyway).
+      monitor = [
+        "HDMI-A-1,preferred,auto,1"
+        ",preferred,auto,1.5"
+      ];
 
       # Vivado's Java main window asks to float at a size larger than the screen.
       windowrulev2 = [ "tile, class:^(Vivado)$, title:.*Vivado [0-9.]+$" ];
