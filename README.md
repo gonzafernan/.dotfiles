@@ -11,6 +11,14 @@ nix run home-manager -- switch --flake ".?submodules=1#ggf"
 (the `submodules=1` is required — this repo has a git submodule, and Nix's flake
 git fetcher excludes submodule content by default)
 
+## Layout
+
+- `home.nix` — user identity and the list of modules
+- `modules/` — one home-manager module per tool or topic
+- `config/` — the tools' own config files, linked or read as-is by the modules
+- `system/` — files that must be installed manually with sudo (see below)
+- `wallpapers/`
+
 ## Tools tracked
 
 - Neovim
@@ -27,12 +35,12 @@ git fetcher excludes submodule content by default)
   routinely removes old versions from its download mirror, so a stable pin
   404s within weeks. `nixpkgs-unstable` tracks the current version closely
   enough to actually build. Needs a one-time AppArmor profile for its sandbox
-  (see below); scales itself automatically via `hyprland.nix`'s `monitor`
+  (see below); scales itself automatically via `modules/hyprland.nix`'s `monitor`
   scale and `NIXOS_OZONE_WL`, no per-app scale flag needed.
 - Vivado (Xilinx Design Suite) — config only, same as Obsidian: a manual
   install at `/tools/Xilinx/Vivado/2024.2` (proprietary, licensed, not in
   nixpkgs, not something we'd package ourselves), not managed by Nix at all.
-  Only its `.desktop` launcher entry is tracked (`home.nix`), so the launcher can find
+  Only its `.desktop` launcher entry is tracked (`modules/desktop-entries.nix`), so the launcher can find
   it — bump the version number there if Vivado is ever upgraded.
 
 ## Chrome sandbox: required manual system setup
@@ -54,7 +62,7 @@ deny. Accepted here in exchange for Chrome's renderer sandbox.
 ## Hyprland on non-NixOS: required manual system setup
 
 Hyprland itself and its whole ecosystem (the noctalia shell — bar, notifications,
-lock screen, idle, wallpaper, launcher, ...) are fully declared in `hyprland.nix`. But a few things live outside
+lock screen, idle, wallpaper, launcher, ...) are fully declared in `modules/hyprland.nix` and `modules/noctalia.nix`. But a few things live outside
 what a per-user home-manager install can reach — system paths and group
 membership — and have no Nix-managed equivalent on a non-NixOS distro. These are
 one-time steps to redo on a fresh machine (or after a reinstall):
@@ -69,7 +77,7 @@ one-time steps to redo on a fresh machine (or after a reinstall):
 
 2. **GDM session entry**, so Hyprland is selectable at the login screen:
    ```sh
-   sudo cp hyprland/system/wayland-sessions/hyprland.desktop /usr/share/wayland-sessions/
+   sudo cp system/wayland-sessions/hyprland.desktop /usr/share/wayland-sessions/
    ```
 
 3. **noctalia's lock screen PAM setup.** Nix's own PAM library (linked into
@@ -79,7 +87,7 @@ one-time steps to redo on a fresh machine (or after a reinstall):
    even parses. Upstream hardcodes the `login` service (which TTY login also
    uses, so it must stay untouched); `flake.nix` patches it to `noctalia`:
    ```sh
-   sudo cp hyprland/system/pam.d/noctalia /etc/pam.d/noctalia
+   sudo cp system/pam.d/noctalia /etc/pam.d/noctalia
    ```
    Separately, Nix's `pam_unix.so` has `/run/wrappers/bin/unix_chkpwd` hardcoded
    as the helper it execs to check the password against `/etc/shadow` — a
@@ -87,7 +95,7 @@ one-time steps to redo on a fresh machine (or after a reinstall):
    redirects it to Ubuntu's own working `unix_chkpwd`. Uses `tmpfiles.d` (not a
    one-off symlink) because `/run` is a tmpfs wiped on every reboot:
    ```sh
-   sudo cp hyprland/system/tmpfiles.d/nix-pam-wrappers.conf /etc/tmpfiles.d/
+   sudo cp system/tmpfiles.d/nix-pam-wrappers.conf /etc/tmpfiles.d/
    sudo systemd-tmpfiles --create /etc/tmpfiles.d/nix-pam-wrappers.conf
    ```
 
