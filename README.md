@@ -8,7 +8,7 @@ Everything is installed and configured via Nix (home-manager):
 nix run home-manager -- switch --flake ".?submodules=1#ggf"
 ```
 
-(the `submodules=1` is required — this repo has git submodules, and Nix's flake
+(the `submodules=1` is required — this repo has a git submodule, and Nix's flake
 git fetcher excludes submodule content by default)
 
 ## Tools tracked

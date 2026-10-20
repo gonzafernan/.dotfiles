@@ -1,5 +1,5 @@
 {
-  # This repo has git submodules (nvim/.config/nvim, tmux/.tmux/plugins/tpm).
+  # This repo has a git submodule (nvim/.config/nvim).
   # Nix's flake git fetcher excludes submodule content by default, so always
   # activate with: nix run home-manager -- switch --flake ".?submodules=1#ggf"
 
