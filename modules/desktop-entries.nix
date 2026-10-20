@@ -1,12 +1,7 @@
 { ... }:
 
 {
-  # Vivado is a manual Xilinx install (like Obsidian), not Nix-managed — no
-  # .desktop file ships with it at all, so launchers had no way to find it. Same
-  # xdg.dataFile-into-~/.local/share/applications approach as Chrome above,
-  # for the same reason (guaranteed discovery regardless of XDG_DATA_DIRS).
-  # The version number is hardcoded (2024.2) same as Obsidian's /opt path is
-  # fixed — bump it here if/when Vivado gets upgraded.
+  # Vivado is a manual install that ships no .desktop file; bump the version on upgrade.
   xdg.dataFile."applications/vivado.desktop".text = ''
     [Desktop Entry]
     Name=Vivado

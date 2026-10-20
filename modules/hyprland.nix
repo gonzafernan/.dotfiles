@@ -18,14 +18,7 @@ in
     polkit_gnome
   ];
 
-  # Without a cursor theme configured anywhere, Hyprland falls back to its own
-  # built-in default — the Hyprland logo itself, rendered as the pointer. This
-  # symlinks the theme to ~/.icons/default/ (home-manager's home.pointerCursor
-  # module), which is the exact fallback location Hyprland already tries and
-  # failed to find anything in (confirmed in an earlier crash log: "Hyprcursor
-  # failed loading theme \"\", falling back to Xcursor" -> "XCursor failed
-  # finding any shapes in theme \"default\""). No env var propagation needed —
-  # sidesteps that whole class of problem entirely.
+  # Without a cursor theme Hyprland renders its own logo as the pointer.
   home.pointerCursor = {
     package = pkgs.catppuccin-cursors.mochaLavender;
     name = "catppuccin-mocha-lavender-cursors";
@@ -33,10 +26,6 @@ in
     gtk.enable = true;
   };
 
-  # Themes the GTK3/GTK4 apps used for advanced Wifi/Bluetooth setup below
-  # (nm-connection-editor, blueman-manager) to match everything else —
-  # variant/accents match the mocha/lavender scheme used throughout this file.
-  # GTK3 apps read this via ~/.config/gtk-3.0/settings.ini regardless of dconf.
   gtk = {
     enable = true;
     theme = {
@@ -48,14 +37,8 @@ in
     };
   };
 
-  # On NixOS, hardware.graphics.enable wires these up automatically. Standalone
-  # home-manager on a non-NixOS distro has no equivalent, so without this
-  # Hyprland's Nix-built Mesa can't find its own Intel driver (iris_dri.so) or
-  # EGL vendor ICD, and OpenGL/EGL init silently fails ("no gbm support",
-  # "Supported EGL extensions: (0)") even though the driver files exist in the
-  # store — they're just in the separate mesa.drivers output nothing else pulls in.
-  # NIXOS_OZONE_WL makes Chrome/Electron render natively on Wayland instead of
-  # through XWayland, which would be blurry at the 1.5 monitor scale.
+  # Non-NixOS has no hardware.graphics: point Nix-built Mesa at its drivers explicitly.
+  # NIXOS_OZONE_WL makes Chrome/Electron render natively on Wayland (sharp at 1.5 scale).
   systemd.user.sessionVariables = {
     LIBGL_DRIVERS_PATH = "${pkgs.mesa.drivers}/lib/dri";
     __EGL_VENDOR_LIBRARY_FILENAMES = "${pkgs.mesa.drivers}/share/glvnd/egl_vendor.d/50_mesa.json";
@@ -71,8 +54,7 @@ in
     settings = {
       # 1.5 for the ~240 PPI panel; Wayland-native apps scale themselves from this,
       # so don't add per-app scale/font compensations on top (they'd double-scale).
-      # HDMI-A-1's 1280x720 has no clean divisor at 1.5, so it gets its own scale
-      # instead of the wildcard (Hyprland warned and fell back to 1.0 anyway).
+      # HDMI-A-1 (1280x720) has no clean 1.5 divisor.
       monitor = [
         "HDMI-A-1,preferred,auto,1"
         ",preferred,auto,1.5"
@@ -81,21 +63,10 @@ in
       # Vivado's Java main window asks to float at a size larger than the screen.
       windowrulev2 = [ "tile, class:^(Vivado)$, title:.*Vivado [0-9.]+$" ];
 
-      # home.pointerCursor's `size` only reaches home.sessionVariables (the
-      # .profile-based mechanism), which — like PATH and XDG_DATA_DIRS — never
-      # reaches a GDM-launched Hyprland session. Unlike those, XCURSOR_SIZE is
-      # read directly by Hyprland's own process (not by an exec'd child via
-      # /bin/sh -c), so Hyprland's own `env` directive reaches it fine here.
+      # home.sessionVariables never reach a GDM-launched session.
       env = [ "XCURSOR_SIZE,32" ];
 
-      # Every exec/bind below uses a full Nix store path rather than a bare command
-      # name. Tried env=PATH,... (Hyprland's own directive, meant to apply to
-      # itself and everything it execs) and systemd.user.sessionVariables.PATH
-      # (~/.config/environment.d/) first — neither actually reached the `/bin/sh -c`
-      # Hyprland's exec dispatcher spawns commands through (confirmed via journal:
-      # "/bin/sh: 1: kitty: not found" even with the env directive active and
-      # verified present in the generated config). Full paths sidestep PATH
-      # resolution entirely, so this can't regress the same way again.
+      # Full store paths everywhere: Hyprland's exec shell doesn't get the Nix PATH.
       exec-once = [
         "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
         "${pkgs.coreutils}/bin/sleep 1 && ${pkgs.hyprland}/bin/hyprctl keyword animations:enabled true"
@@ -107,8 +78,7 @@ in
 
       debug.disable_logs = false;
 
-      # Lets a restarted noctalia (systemd Restart=on-failure) take back the lock
-      # if it crashes while locked, instead of leaving the session stuck.
+      # Lets noctalia re-take the lock if it crashes and systemd restarts it.
       misc.allow_session_lock_restore = true;
 
       general = {
@@ -129,13 +99,7 @@ in
         };
       };
 
-      # false here, then flipped true a moment after login (exec-once below) —
-      # this is the standard workaround (confirmed via a Hyprland maintainer
-      # discussion, github.com/hyprwm/Hyprland/discussions/6866; there's no
-      # dedicated "disable just the first-launch animation" flag) for the
-      # brief fade Hyprland otherwise plays on its very first frame. Normal
-      # animations (window open/close, workspace switch) resume immediately
-      # after that ~1s delay — only the initial startup transition is skipped.
+      # Re-enabled by exec-once; skips the fade on the very first frame (hyprwm/Hyprland#6866).
       animations.enabled = false;
 
       input = {
@@ -157,8 +121,7 @@ in
         "$mod, F, fullscreen"
         "$mod, V, togglefloating"
 
-        # Full Bluetooth/network managers for pairing, VPNs, static IPs — anything
-        # beyond the quick toggles in noctalia's control center.
+        # Full managers, beyond noctalia's quick toggles.
         "$mod, B, exec, ${pkgs.blueman}/bin/blueman-manager"
         "$mod, N, exec, ${pkgs.networkmanagerapplet}/bin/nm-connection-editor"
 
@@ -223,10 +186,7 @@ in
     };
   };
 
-  # Auto-mounts SD cards/external drives on insert (udisks2 does the actual
-  # mounting; udisks2 itself is a system service, already present since GNOME
-  # depends on it — this just adds the piece GNOME's own file manager would
-  # normally provide: something that actually triggers the mount and notifies).
+  # Automounts removable drives (udisks2 is already a system service).
   services.udiskie = {
     enable = true;
     tray = "never";

@@ -1,10 +1,7 @@
 { noctaliaPkg, lib, ... }:
 
 {
-  # This has silently failed to get applied three separate times because it's a
-  # manual sudo step with no reminder — see README.md "Hyprland on non-NixOS:
-  # required manual system setup". Rather than trust that it was done, check for
-  # it on every single `home-manager switch` and make it impossible to miss.
+  # Manual sudo step that has been missed before; see README.md.
   home.activation.checkNoctaliaPam = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     if [ ! -f /etc/pam.d/noctalia ] || [ ! -e /run/wrappers/bin/unix_chkpwd ]; then
       echo ""
@@ -13,7 +10,7 @@
       echo "# The screen lock will NEVER accept your password until    #"
       echo "# you run (see README.md for why):                         #"
       echo "#                                                          #"
-      echo "#   sudo cp system/pam.d/noctalia /etc/pam.d/     #"
+      echo "#   sudo cp system/pam.d/noctalia /etc/pam.d/              #"
       echo "#   sudo cp system/tmpfiles.d/nix-pam-wrappers.conf \\"
       echo "#        /etc/tmpfiles.d/                                 #"
       echo "#   sudo systemd-tmpfiles --create \\"
