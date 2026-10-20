@@ -10,16 +10,7 @@ let
   # ~240 PPI panel from before hyprland.nix's `monitor` had a real scale set.
   # With that scale in place, Chrome (native Wayland via NIXOS_OZONE_WL) reads
   # it and scales itself automatically — keeping the flag too would double-scale.
-  chrome = pkgsUnstable.google-chrome.override {
-    # --no-sandbox: Chrome's SUID sandbox helper must be a setuid-root binary,
-    # which Nix store files can never be (read-only/immutable) — NixOS solves
-    # this via security.wrappers (a setuid copy at /run/wrappers/bin/...), but
-    # that path changes on every Chrome update, so a static system file pointing
-    # at today's store hash would need re-applying almost weekly. Disabling the
-    # sandbox is the standard low-maintenance answer for Chrome-via-Nix on a
-    # non-NixOS, single-user machine (reduced renderer isolation, not "no security").
-    commandLineArgs = "--no-sandbox";
-  };
+  chrome = pkgsUnstable.google-chrome;
 in
 {
   imports = [ ./hyprland.nix ];
@@ -97,6 +88,23 @@ in
     Terminal=false
     Type=Application
     Categories=Development;Electronics;
+  '';
+
+  # Chrome's sandbox can't start without this profile (Ubuntu restricts
+  # unprivileged user namespaces) — see README.md.
+  home.activation.checkChromeAppArmor = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    if [ ! -f /etc/apparmor.d/nix-google-chrome ]; then
+      echo ""
+      echo "############################################################"
+      echo "# WARNING: Chrome's AppArmor profile is missing! Chrome    #"
+      echo "# will refuse to start until you run (see README.md):      #"
+      echo "#                                                          #"
+      echo "#   sudo cp system/apparmor.d/nix-google-chrome \\"
+      echo "#        /etc/apparmor.d/                                  #"
+      echo "#   sudo apparmor_parser -r /etc/apparmor.d/nix-google-chrome"
+      echo "############################################################"
+      echo ""
+    fi
   '';
 
   fonts.fontconfig.enable = true;

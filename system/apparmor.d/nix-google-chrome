@@ -1,0 +1,11 @@
+# Same as Ubuntu's /etc/apparmor.d/chrome, for Nix-built Chrome: grants the
+# userns permission its sandbox needs without confining anything else.
+
+abi <abi/4.0>,
+include <tunables/global>
+
+profile nix-google-chrome /nix/store/*-google-chrome-*/share/google/chrome/chrome flags=(unconfined) {
+  userns,
+
+  include if exists <local/nix-google-chrome>
+}

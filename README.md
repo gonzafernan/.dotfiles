@@ -26,14 +26,30 @@ git fetcher excludes submodule content by default)
   `google-chrome` derivation fetches one specific `.deb` by URL, and Google
   routinely removes old versions from its download mirror, so a stable pin
   404s within weeks. `nixpkgs-unstable` tracks the current version closely
-  enough to actually build. Wrapped with `--no-sandbox` (see `home.nix` for
-  why); scales itself automatically via `hyprland.nix`'s `monitor` scale and
-  `NIXOS_OZONE_WL`, no per-app scale flag needed.
+  enough to actually build. Needs a one-time AppArmor profile for its sandbox
+  (see below); scales itself automatically via `hyprland.nix`'s `monitor`
+  scale and `NIXOS_OZONE_WL`, no per-app scale flag needed.
 - Vivado (Xilinx Design Suite) — config only, same as Obsidian: a manual
   install at `/tools/Xilinx/Vivado/2024.2` (proprietary, licensed, not in
   nixpkgs, not something we'd package ourselves), not managed by Nix at all.
   Only its `.desktop` launcher entry is tracked (`home.nix`), so the launcher can find
   it — bump the version number there if Vivado is ever upgraded.
+
+## Chrome sandbox: required manual system setup
+
+Ubuntu blocks unprivileged user namespaces unless an AppArmor profile allows
+them, and Chrome's sandbox needs them. Ubuntu's own profile only covers
+`/opt/google/chrome/chrome`, so the Nix build gets an equivalent one matching
+its store path (without it Chrome refuses to start):
+
+```sh
+sudo cp system/apparmor.d/nix-google-chrome /etc/apparmor.d/
+sudo apparmor_parser -r /etc/apparmor.d/nix-google-chrome
+```
+
+Trade-off: anything running as this user can create a store path matching the
+profile's glob and regain user namespaces, which the restriction exists to
+deny. Accepted here in exchange for Chrome's renderer sandbox.
 
 ## Hyprland on non-NixOS: required manual system setup
 
