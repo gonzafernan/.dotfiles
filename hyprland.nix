@@ -2,17 +2,8 @@
 
 let
   mocha = {
-    base = "1e1e2e";
-    mantle = "181825";
-    crust = "11111b";
-    text = "cdd6f4";
     surface0 = "313244";
-    surface1 = "45475a";
-    overlay0 = "6c7086";
-    blue = "89b4fa";
     lavender = "b4befe";
-    red = "f38ba8";
-    green = "a6e3a1";
   };
 in
 {
@@ -39,6 +30,7 @@ in
     package = pkgs.catppuccin-cursors.mochaLavender;
     name = "catppuccin-mocha-lavender-cursors";
     size = 32;
+    gtk.enable = true;
   };
 
   # Themes the GTK3/GTK4 apps used for advanced Wifi/Bluetooth setup below
@@ -53,11 +45,6 @@ in
         variant = "mocha";
         accents = [ "lavender" ];
       };
-    };
-    cursorTheme = {
-      name = "catppuccin-mocha-lavender-cursors";
-      package = pkgs.catppuccin-cursors.mochaLavender;
-      size = 32;
     };
   };
 
@@ -89,14 +76,8 @@ in
   # EGL vendor ICD, and OpenGL/EGL init silently fails ("no gbm support",
   # "Supported EGL extensions: (0)") even though the driver files exist in the
   # store — they're just in the separate mesa.drivers output nothing else pulls in.
-  # NIXOS_OZONE_WL is a NixOS-convention variable that nixpkgs' google-chrome
-  # (and Electron apps generally) check to opt into native Wayland rendering
-  # instead of falling back to XWayland. Without it, Chrome would render via
-  # XWayland at scale 1 and get upscaled by the compositor to match our
-  # --force-device-scale-factor, which is blurry — native Wayland renders
-  # crisply at the target scale directly.
-  # (XDG_DATA_DIRS is NOT here — confirmed live it's silently refused via
-  # environment.d exactly like PATH was; see the `env` list below instead.)
+  # NIXOS_OZONE_WL makes Chrome/Electron render natively on Wayland instead of
+  # through XWayland, which would be blurry at the 1.5 monitor scale.
   systemd.user.sessionVariables = {
     LIBGL_DRIVERS_PATH = "${pkgs.mesa.drivers}/lib/dri";
     __EGL_VENDOR_LIBRARY_FILENAMES = "${pkgs.mesa.drivers}/share/glvnd/egl_vendor.d/50_mesa.json";
@@ -110,15 +91,8 @@ in
     systemd.variables = [ "--all" ];
 
     settings = {
-      # 1.5 scale for this ~240 PPI panel: this is the actual systemic fix for
-      # "X app's content is tiny" (waybar, kitty, Chrome, now Obsidian) rather
-      # than patching each app's own font/size setting individually forever —
-      # any properly Wayland-native client (GTK, Qt, Electron via ozone) reads
-      # this and scales itself automatically. Per-app compensations made before
-      # this existed (waybar height/font, kitty font_size, Chrome's
-      # --force-device-scale-factor) are being reverted alongside this, since
-      # stacking both would double-scale.
-      #
+      # 1.5 for the ~240 PPI panel; Wayland-native apps scale themselves from this,
+      # so don't add per-app scale/font compensations on top (they'd double-scale).
       # HDMI-A-1's 1280x720 has no clean divisor at 1.5, so it gets its own scale
       # instead of the wildcard (Hyprland warned and fell back to 1.0 anyway).
       monitor = [

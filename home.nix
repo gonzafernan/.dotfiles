@@ -140,7 +140,6 @@ in
     extraConfig = {
       core.editor = "nvim";
       init.defaultBranch = "main";
-      http.sslVerify = true;
       status.branch = true;
       status.showStash = true;
       url."git@github.com:".insteadOf = "gh:";
