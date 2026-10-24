@@ -1,6 +1,7 @@
 { pkgs, pkgsUnstable, noctaliaPkg, ... }:
 
 let
+  fileManager = "${pkgsUnstable.kitty}/bin/kitty -e ${pkgsUnstable.yazi}/bin/yazi";
   mocha = {
     surface0 = "313244";
     lavender = "b4befe";
@@ -74,7 +75,7 @@ in
 
       "$terminal" = "${pkgsUnstable.kitty}/bin/kitty";
       "$launcher" = "${noctaliaPkg}/bin/noctalia msg panel-toggle launcher";
-      "$fileManager" = "${pkgsUnstable.kitty}/bin/kitty -e ${pkgsUnstable.yazi}/bin/yazi";
+      "$fileManager" = fileManager;
 
       debug.disable_logs = false;
 
@@ -189,9 +190,10 @@ in
   # Automounts removable drives (udisks2 is already a system service).
   services.udiskie = {
     enable = true;
-    tray = "never";
+    tray = "auto";
     notify = true;
     automount = true;
+    settings.program_options.file_manager = fileManager;
   };
 
   xdg.portal = {
