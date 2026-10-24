@@ -62,7 +62,13 @@ in
       ];
 
       # Vivado's Java main window asks to float at a size larger than the screen.
-      windowrulev2 = [ "tile, class:^(Vivado)$, title:.*Vivado [0-9.]+$" ];
+      windowrulev2 = [
+        "tile, class:^(Vivado)$, title:.*Vivado [0-9.]+$"
+        # Portal file dialogs aren't attached to their app, so they'd tile like a normal window.
+        "float, class:^(xdg-desktop-portal-gtk)$"
+        "size 60% 70%, class:^(xdg-desktop-portal-gtk)$"
+        "center, class:^(xdg-desktop-portal-gtk)$"
+      ];
 
       # home.sessionVariables never reach a GDM-launched session.
       env = [ "XCURSOR_SIZE,32" ];
