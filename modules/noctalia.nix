@@ -31,6 +31,15 @@
         builtin = "Catppuccin";
       };
       wallpaper.default.path = "${../wallpapers/wallpaper.jpg}";
+      weather.enabled = true;
+      location.address = "Toulouse, France";
+      calendar = {
+        enabled = true;
+        account.personal_google = {
+          type = "google";
+          color = "primary";
+        };
+      };
       bar.main = {
         margin_edge = 8;
         margin_ends = 8;
