@@ -1,2 +1,7 @@
 [mgr]
 show_hidden = true
+
+# Canon RAW isn't detected as an image mime type; render it with ImageMagick (LibRaw).
+[plugin]
+prepend_preloaders = [{ url = "*.{cr3,CR3}", run = "magick" }]
+prepend_previewers = [{ url = "*.{cr3,CR3}", run = "magick" }]
