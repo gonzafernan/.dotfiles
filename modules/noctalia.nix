@@ -59,6 +59,15 @@
           font_weight = 600;
         };
       };
+      # Inset past Hyprland gaps_out (8) so the window border stays visible.
+      notification = {
+        position = "bottom_right";
+        offset_x = 16;
+        offset_y = 16;
+        border_color = "primary";
+        border_width = 2;
+        show_app_name = false;
+      };
       idle.behavior = {
         lock = {
           timeout = 300;
