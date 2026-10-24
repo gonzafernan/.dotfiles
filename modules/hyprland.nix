@@ -1,4 +1,4 @@
-{ pkgs, pkgsUnstable, noctaliaPkg, ... }:
+{ config, pkgs, pkgsUnstable, noctaliaPkg, ... }:
 
 let
   fileManager = "${pkgsUnstable.kitty}/bin/kitty -e ${pkgsUnstable.yazi}/bin/yazi";
@@ -73,7 +73,8 @@ in
         "${pkgs.coreutils}/bin/sleep 1 && ${pkgs.hyprland}/bin/hyprctl keyword animations:enabled true"
       ];
 
-      "$terminal" = "${pkgsUnstable.kitty}/bin/kitty";
+      "$terminal" = "${pkgsUnstable.kitty}/bin/kitty -e ${config.programs.tmux.package}/bin/tmux new-session -A -s main";
+      "$plainTerminal" = "${pkgsUnstable.kitty}/bin/kitty";
       "$launcher" = "${noctaliaPkg}/bin/noctalia msg panel-toggle launcher";
       "$fileManager" = fileManager;
 
@@ -114,6 +115,7 @@ in
 
       bind = [
         "$mod, Return, exec, $terminal"
+        "$mod SHIFT, Return, exec, $plainTerminal"
         "$mod, D, exec, $launcher"
         "$mod, E, exec, $fileManager"
         "$mod, Q, killactive"
