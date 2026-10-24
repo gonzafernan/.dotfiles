@@ -10,6 +10,7 @@
     ./modules/tmux.nix
     ./modules/kitty.nix
     ./modules/yazi.nix
+    ./modules/f3d.nix
     ./modules/nvim.nix
     ./modules/git.nix
     ./modules/obsidian.nix

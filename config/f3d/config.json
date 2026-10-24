@@ -1,0 +1,17 @@
+[
+  {
+    "bindings": {
+      "H": "azimuth_camera 15",
+      "L": "azimuth_camera -15",
+      "K": "elevation_camera 15",
+      "J": "elevation_camera -15",
+      "Shift+H": "azimuth_camera 90",
+      "Shift+L": "azimuth_camera -90",
+      "Shift+K": "elevation_camera 90",
+      "Shift+J": "elevation_camera -90",
+      "Ctrl+H": "toggle ui.cheatsheet",
+      "Ctrl+L": "increase_light_intensity",
+      "Ctrl+Shift+L": "decrease_light_intensity"
+    }
+  }
+]
