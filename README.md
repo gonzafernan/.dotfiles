@@ -5,7 +5,7 @@
 Everything is installed and configured via Nix (home-manager):
 
 ```sh
-nix run home-manager -- switch --flake ".?submodules=1#ggf"
+nix run home-manager -- switch --flake ".?submodules=1#personal"   # or #work
 ```
 
 (the `submodules=1` is required — this repo has a git submodule, and Nix's flake
@@ -13,7 +13,9 @@ git fetcher excludes submodule content by default)
 
 ## Layout
 
-- `home.nix` — user identity and the list of modules
+- `hosts/` — one profile per machine (`personal`, `work`), each importing `home.nix`
+  plus its own modules
+- `home.nix` — user identity and the modules shared by every host
 - `modules/` — one home-manager module per tool or topic
 - `config/` — the tools' own config files, linked or read as-is by the modules
 - `system/` — files that must be installed manually with sudo (see below)
@@ -40,8 +42,8 @@ git fetcher excludes submodule content by default)
 - Vivado (Xilinx Design Suite) — config only, same as Obsidian: a manual
   install at `/tools/Xilinx/Vivado/2024.2` (proprietary, licensed, not in
   nixpkgs, not something we'd package ourselves), not managed by Nix at all.
-  Only its `.desktop` launcher entry is tracked (`modules/desktop-entries.nix`), so the launcher can find
-  it — bump the version number there if Vivado is ever upgraded.
+  Only its `.desktop` launcher entry is tracked (`modules/hdl.nix`, personal
+  host only), so the launcher can find it — bump the version number there if Vivado is ever upgraded.
 
 ## Chrome sandbox: required manual system setup
 

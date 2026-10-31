@@ -1,6 +1,6 @@
 {
   # Flakes skip submodule content (config/nvim) unless asked; always activate with:
-  #   nix run home-manager -- switch --flake ".?submodules=1#ggf"
+  #   nix run home-manager -- switch --flake ".?submodules=1#<host>"   (personal, work)
 
   description = "Personal system home-manager configuration";
 
@@ -37,11 +37,15 @@
                            'if (false && interfaceName == hyprland_focus_grab_manager_v1_interface.name) {'
         '';
       });
-    in {
-      homeConfigurations.ggf = home-manager.lib.homeManagerConfiguration {
+      mkHome = host: home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         extraSpecialArgs = { inherit pkgsUnstable noctaliaPkg; };
-        modules = [ noctalia.homeModules.default ./home.nix ];
+        modules = [ noctalia.homeModules.default host ];
+      };
+    in {
+      homeConfigurations = {
+        personal = mkHome ./hosts/personal.nix;
+        work = mkHome ./hosts/work.nix;
       };
     };
 }

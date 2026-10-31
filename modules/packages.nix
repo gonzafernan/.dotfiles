@@ -1,4 +1,4 @@
-{ pkgs, pkgsUnstable, lib, ... }:
+{ pkgs, pkgsUnstable, ... }:
 
 {
   home.packages = with pkgs; [
@@ -11,13 +11,9 @@
     typst
     tinymist
     typstyle
-    pkgsUnstable.iverilog
-    gtkwave
     ruff
     pyright
-    (lib.hiPrio pkgsUnstable.python3)
-    pkgsUnstable.python312
-    pkgsUnstable.verible
+    pkgsUnstable.python3
     pkgsUnstable.stylua
     zathura
   ];

@@ -1,6 +1,12 @@
-{ ... }:
+{ pkgs, pkgsUnstable, ... }:
 
 {
+  home.packages = [
+    pkgsUnstable.iverilog
+    pkgs.gtkwave
+    pkgsUnstable.verible
+  ];
+
   # Vivado is a manual install that ships no .desktop file; bump the version on upgrade.
   xdg.dataFile."applications/vivado.desktop".text = ''
     [Desktop Entry]

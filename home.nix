@@ -1,16 +1,15 @@
 { ... }:
 
+# Shared by every host; host-only modules are imported from hosts/.
 {
   imports = [
     ./modules/packages.nix
     ./modules/chrome.nix
-    ./modules/desktop-entries.nix
     ./modules/hyprland.nix
     ./modules/noctalia.nix
     ./modules/tmux.nix
     ./modules/kitty.nix
     ./modules/yazi.nix
-    ./modules/f3d.nix
     ./modules/nvim.nix
     ./modules/git.nix
     ./modules/obsidian.nix

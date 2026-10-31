@@ -1,10 +1,10 @@
-{ ... }:
+{ lib, ... }:
 
 {
   programs.git = {
     enable = true;
     userName = "Gonzalo G. Fernandez";
-    userEmail = "fernandez.gfg@gmail.com";
+    userEmail = lib.mkDefault "fernandez.gfg@gmail.com";
     ignores = [ "**/.claude/settings.local.json" ];
     extraConfig = {
       core.editor = "nvim";
