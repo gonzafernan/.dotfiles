@@ -1,4 +1,4 @@
-{ pkgsUnstable, lib, ... }:
+{ pkgs, pkgsUnstable, lib, ... }:
 
 let
   obsidian = pkgsUnstable.obsidian;
@@ -8,11 +8,12 @@ in
 
   # Same reason as Chrome: launchers only scan ~/.local/share/applications. The
   # launcher's PATH lacks ~/.nix-profile/bin, so point Exec/Icon at the store.
-  xdg.dataFile."applications/obsidian.desktop".text =
-    builtins.replaceStrings
-      [ "Exec=obsidian" "Icon=obsidian" ]
-      [ "Exec=${obsidian}/bin/obsidian" "Icon=${obsidian}/share/icons/hicolor/512x512/apps/obsidian.png" ]
-      (builtins.readFile "${obsidian}/share/applications/obsidian.desktop");
+  xdg.dataFile."applications/obsidian.desktop".source =
+    pkgs.runCommand "obsidian.desktop" { } ''
+      substitute ${obsidian}/share/applications/obsidian.desktop $out \
+        --replace-fail "Exec=obsidian" "Exec=${obsidian}/bin/obsidian" \
+        --replace-fail "Icon=obsidian" "Icon=${obsidian}/share/icons/hicolor/512x512/apps/obsidian.png"
+    '';
 
   xdg.configFile."obsidian/obsidian.vimrc".source = ../config/obsidian/obsidian.vimrc;
 
