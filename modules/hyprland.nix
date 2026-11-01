@@ -1,4 +1,4 @@
-{ config, pkgs, pkgsUnstable, noctaliaPkg, ... }:
+{ config, lib, pkgs, pkgsUnstable, noctaliaPkg, ... }:
 
 let
   fileManager = "${pkgsUnstable.kitty}/bin/kitty -e ${pkgsUnstable.yazi}/bin/yazi";
@@ -36,18 +36,15 @@ in
         accents = [ "lavender" ];
       };
     };
+    gtk4.theme = config.gtk.theme;
   };
 
-  # Non-NixOS has no hardware.graphics: point Nix-built Mesa at its drivers explicitly.
   # NIXOS_OZONE_WL makes Chrome/Electron render natively on Wayland (sharp at 1.5 scale).
-  systemd.user.sessionVariables = {
-    LIBGL_DRIVERS_PATH = "${pkgs.mesa.drivers}/lib/dri";
-    __EGL_VENDOR_LIBRARY_FILENAMES = "${pkgs.mesa.drivers}/share/glvnd/egl_vendor.d/50_mesa.json";
-    NIXOS_OZONE_WL = "1";
-  };
+  systemd.user.sessionVariables.NIXOS_OZONE_WL = "1";
 
   wayland.windowManager.hyprland = {
     enable = true;
+    configType = "hyprlang";
     xwayland.enable = true;
     systemd.enable = true;
     systemd.variables = [ "--all" ];
@@ -62,21 +59,19 @@ in
       ];
 
       # Vivado's Java main window asks to float at a size larger than the screen.
-      windowrulev2 = [
-        "tile, class:^(Vivado)$, title:.*Vivado [0-9.]+$"
+      windowrule = [
+        "match:class ^(Vivado)$, match:title .*Vivado [0-9.]+$, tile on"
         # Portal file dialogs aren't attached to their app, so they'd tile like a normal window.
-        "float, class:^(xdg-desktop-portal-gtk)$"
-        "size 60% 70%, class:^(xdg-desktop-portal-gtk)$"
-        "center, class:^(xdg-desktop-portal-gtk)$"
+        "match:class ^(xdg-desktop-portal-gtk)$, float on, size (monitor_w*0.6) (monitor_h*0.7), center on"
       ];
 
       # home.sessionVariables never reach a GDM-launched session.
-      env = [ "XCURSOR_SIZE,32" ];
+      env = [ "XCURSOR_SIZE,32" "HYPRCURSOR_SIZE,32" ];
 
       # Full store paths everywhere: Hyprland's exec shell doesn't get the Nix PATH.
       exec-once = [
         "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
-        "${pkgs.coreutils}/bin/sleep 1 && ${pkgs.hyprland}/bin/hyprctl keyword animations:enabled true"
+        "${pkgs.coreutils}/bin/sleep 1 && ${config.wayland.windowManager.hyprland.finalPackage}/bin/hyprctl keyword animations:enabled true"
       ];
 
       "$terminal" = "${pkgsUnstable.kitty}/bin/kitty -e ${config.programs.tmux.package}/bin/tmux new-session -A -s main";
@@ -203,6 +198,14 @@ in
     automount = true;
     settings.program_options.file_manager = fileManager;
   };
+
+  # systemd doesn't search the Nix profile, so D-Bus activation of the portal fails without this.
+  xdg.configFile."systemd/user/xdg-desktop-portal-hyprland.service".source =
+    "${config.wayland.windowManager.hyprland.finalPortalPackage}/share/systemd/user/xdg-desktop-portal-hyprland.service";
+
+  # Keep the Hyprland session's services (noctalia, udiskie) out of the GNOME fallback.
+  wayland.systemd.target = "hyprland-session.target";
+  systemd.user.services.udiskie.Install.WantedBy = lib.mkForce [ "hyprland-session.target" ];
 
   xdg.portal = {
     enable = true;
