@@ -15,9 +15,11 @@
     ./modules/obsidian.nix
   ];
 
-  home.username = "ggf";
-  home.homeDirectory = "/home/ggf";
   home.stateVersion = "24.11";
+
+  # Links Nix's Mesa into /run/opengl-driver (one-time sudo step, see README.md)
+  # so Nix-built GL apps work without per-session driver variables.
+  targets.genericLinux.enable = true;
 
   programs.home-manager.enable = true;
 }

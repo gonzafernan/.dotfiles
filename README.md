@@ -15,7 +15,7 @@ git fetcher excludes submodule content by default)
 
 - `hosts/` — one profile per machine (`personal`, `work`), each importing `home.nix`
   plus its own modules
-- `home.nix` — user identity and the modules shared by every host
+- `home.nix` — the modules shared by every host (each host sets its own username)
 - `modules/` — one home-manager module per tool or topic
 - `config/` — the tools' own config files, linked or read as-is by the modules
 - `system/` — files that must be installed manually with sudo (see below)
@@ -45,6 +45,30 @@ git fetcher excludes submodule content by default)
   Only its `.desktop` launcher entry is tracked (`modules/hdl.nix`, personal
   host only), so the launcher can find it — bump the version number there if Vivado is ever upgraded.
 
+## GPU drivers for Nix apps: required manual system setup
+
+`targets.genericLinux` links Nix's Mesa into `/run/opengl-driver`, where Nix-built
+GL apps (Hyprland, kitty, noctalia, zathura) look for drivers, so no driver
+variables leak into other sessions. One-time, and again whenever activation warns
+that the drivers changed:
+
+```sh
+sudo $(readlink -f ~/.nix-profile/bin/non-nixos-gpu-setup)
+```
+
+`work` also gets NVIDIA's libraries there (`hosts/work.nix`), since its external
+outputs are on the NVIDIA GPU. They must match the kernel driver exactly, so hold
+Ubuntu's driver and only update it deliberately:
+
+```sh
+sudo apt-mark hold nvidia-driver-580-open linux-modules-nvidia-580-open-generic
+```
+
+To update: `apt-mark unhold` both, upgrade, reboot, then set `version` in
+`hosts/work.nix` to `cat /sys/module/nvidia/version` and `sha256` to the output of
+`nix store prefetch-file https://download.nvidia.com/XFree86/Linux-x86_64/<version>/NVIDIA-Linux-x86_64-<version>.run`,
+switch, rerun the setup command above, and hold again.
+
 ## Chrome sandbox: required manual system setup
 
 Ubuntu blocks unprivileged user namespaces unless an AppArmor profile allows
@@ -64,23 +88,24 @@ deny. Accepted here in exchange for Chrome's renderer sandbox.
 ## Hyprland on non-NixOS: required manual system setup
 
 Hyprland itself and its whole ecosystem (the noctalia shell — bar, notifications,
-lock screen, idle, wallpaper, launcher, ...) are fully declared in `modules/hyprland.nix` and `modules/noctalia.nix`. But a few things live outside
-what a per-user home-manager install can reach — system paths and group
-membership — and have no Nix-managed equivalent on a non-NixOS distro. These are
-one-time steps to redo on a fresh machine (or after a reinstall):
+lock screen, idle, wallpaper, launcher, ...) are fully declared in `modules/hyprland.nix`
+and `modules/noctalia.nix`. But a few things live outside what a per-user
+home-manager install can reach — system paths and group membership — and have no
+Nix-managed equivalent on a non-NixOS distro. These are one-time steps to redo on
+a fresh machine (or after a reinstall):
 
-1. **Render group membership** (needed for Hyprland's GBM/DRM access — without
+1. **GDM session entry**, so Hyprland is selectable at the login screen:
+   ```sh
+   sudo cp system/wayland-sessions/hyprland.desktop /usr/share/wayland-sessions/
+   ```
+
+2. **Render group membership** (needed for Hyprland's GBM/DRM access — without
    it, Hyprland crashes on startup with `CDRMRenderer: fail, no gbm support`):
    ```sh
    sudo usermod -aG render "$USER"
    ```
    Requires a full logout/login (not just re-activating home-manager) to take
    effect.
-
-2. **GDM session entry**, so Hyprland is selectable at the login screen:
-   ```sh
-   sudo cp system/wayland-sessions/hyprland.desktop /usr/share/wayland-sessions/
-   ```
 
 3. **noctalia's lock screen PAM setup.** Nix's own PAM library (linked into
    Nix-built noctalia) can't parse Debian/Ubuntu's `@include` directive used

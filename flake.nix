@@ -5,11 +5,11 @@
   description = "Personal system home-manager configuration";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     # For packages that need newer versions than the stable pin.
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     home-manager = {
-      url = "github:nix-community/home-manager/release-24.11";
+      url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     # No nixpkgs follows: noctalia only builds against nixos-unstable.
@@ -20,13 +20,16 @@
     let
       system = "x86_64-linux";
       # Allow unfree packages one by one, not globally.
-      config.allowUnfreePredicate = pkg:
-        builtins.elem (nixpkgs.lib.getName pkg) [ "google-chrome" ];
+      config = {
+        allowUnfreePredicate = pkg:
+          builtins.elem (nixpkgs.lib.getName pkg) [ "google-chrome" "nvidia-x11" ];
+        nvidia.acceptLicense = true;
+      };
       pkgs = import nixpkgs { inherit system config; };
       pkgsUnstable = import nixpkgs-unstable { inherit system config; };
       # The lock screen hardcodes the "login" PAM service, whose Ubuntu stack Nix's
       # libpam can't parse (see README); give it its own /etc/pam.d/noctalia instead.
-      # Hyprland 0.45 clears focus grabs as soon as they start, closing every panel
+      # Hyprland (seen on 0.45) clears focus grabs as soon as they start, closing every panel
       # on open; skipping the protocol falls back to noctalia's click shield.
       noctaliaPkg = noctalia.packages.${system}.default.overrideAttrs (old: {
         postPatch = old.postPatch + ''

@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Hyprland
 Comment=A dynamic tiling Wayland compositor
-Exec=/home/ggf/.nix-profile/bin/Hyprland
+Exec=sh -c 'exec "$HOME/.nix-profile/bin/start-hyprland"'
 Type=Application
 DesktopNames=Hyprland
