@@ -3,7 +3,7 @@
 let
   mesa = pkgsUnstable.mesa;
   # f3d renders through GLX, which can't find a Mesa driver on non-NixOS without this;
-  # the session's 24.11 Mesa doesn't match unstable's libglvnd.
+  # the stable Mesa in /run/opengl-driver doesn't match unstable's libglvnd.
   f3d = pkgsUnstable.symlinkJoin {
     name = "f3d";
     paths = [ pkgsUnstable.f3d ];

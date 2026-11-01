@@ -6,7 +6,7 @@
     pkgsUnstable.neovim
     xclip
     lazygit
-    (nerdfonts.override { fonts = [ "JetBrainsMono" ]; })
+    nerd-fonts.jetbrains-mono
     # Keep typst/tinymist/typstyle from the same channel: tinymist embeds its own typst.
     typst
     tinymist
