@@ -21,7 +21,7 @@
       system = "x86_64-linux";
       # Allow unfree packages one by one, not globally.
       config.allowUnfreePredicate = pkg:
-        builtins.elem (nixpkgs.lib.getName pkg) [ "google-chrome" ];
+        builtins.elem (nixpkgs.lib.getName pkg) [ "google-chrome" "obsidian" ];
       pkgs = import nixpkgs { inherit system config; };
       pkgsUnstable = import nixpkgs-unstable { inherit system config; };
       # The lock screen hardcodes the "login" PAM service, whose Ubuntu stack Nix's

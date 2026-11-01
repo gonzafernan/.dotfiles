@@ -1,0 +1,11 @@
+# Same as nix-google-chrome, for Electron apps from Nix (Obsidian): grants the
+# userns permission their sandbox needs without confining anything else.
+
+abi <abi/4.0>,
+include <tunables/global>
+
+profile nix-electron /nix/store/*-electron-*/libexec/electron/electron flags=(unconfined) {
+  userns,
+
+  include if exists <local/nix-electron>
+}
