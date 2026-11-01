@@ -28,8 +28,8 @@ git fetcher excludes submodule content by default)
 - kitty
 - yazi
 - git
-- Obsidian (config only — the app itself is a manual install at `/opt/obsidian`,
-  not managed by Nix)
+- Obsidian — from `pkgsUnstable`, like Chrome; needs the Electron AppArmor
+  profile (see below)
 - Hyprland (see below)
 - Google Chrome — installed from `pkgsUnstable` (a second `nixpkgs-unstable`
   flake input, see `flake.nix`), not the main `nixpkgs-24.11` pin: nixpkgs'
@@ -39,7 +39,7 @@ git fetcher excludes submodule content by default)
   enough to actually build. Needs a one-time AppArmor profile for its sandbox
   (see below); scales itself automatically via `modules/hyprland.nix`'s `monitor`
   scale and `NIXOS_OZONE_WL`, no per-app scale flag needed.
-- Vivado (Xilinx Design Suite) — config only, same as Obsidian: a manual
+- Vivado (Xilinx Design Suite) — config only: a manual
   install at `/tools/Xilinx/Vivado/2024.2` (proprietary, licensed, not in
   nixpkgs, not something we'd package ourselves), not managed by Nix at all.
   Only its `.desktop` launcher entry is tracked (`modules/hdl.nix`, personal
@@ -69,7 +69,7 @@ To update: `apt-mark unhold` both, upgrade, reboot, then set `version` in
 `nix store prefetch-file https://download.nvidia.com/XFree86/Linux-x86_64/<version>/NVIDIA-Linux-x86_64-<version>.run`,
 switch, rerun the setup command above, and hold again.
 
-## Chrome sandbox: required manual system setup
+## Chrome and Electron sandbox: required manual system setup
 
 Ubuntu blocks unprivileged user namespaces unless an AppArmor profile allows
 them, and Chrome's sandbox needs them. Ubuntu's own profile only covers
@@ -81,9 +81,16 @@ sudo cp system/apparmor.d/nix-google-chrome /etc/apparmor.d/
 sudo apparmor_parser -r /etc/apparmor.d/nix-google-chrome
 ```
 
+Electron apps from Nix (Obsidian) need the same, matching Nix's Electron binary:
+
+```sh
+sudo cp system/apparmor.d/nix-electron /etc/apparmor.d/
+sudo apparmor_parser -r /etc/apparmor.d/nix-electron
+```
+
 Trade-off: anything running as this user can create a store path matching the
 profile's glob and regain user namespaces, which the restriction exists to
-deny. Accepted here in exchange for Chrome's renderer sandbox.
+deny. Accepted here in exchange for Chrome's and Electron's renderer sandbox.
 
 ## Hyprland on non-NixOS: required manual system setup
 
