@@ -51,7 +51,7 @@
         media.hide_when_no_media = true;
         tray.drawer = false;
         volume.show_label = false;
-        network.show_label = false;
+        network.show_label = lib.mkDefault false;
         bluetooth.show_label = false;
         battery.display_mode = "graphic";
         clock = {

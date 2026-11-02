@@ -18,6 +18,8 @@ in
   # kitty's font_size is the last one in the file; this overrides config/kitty/kitty.conf.
   programs.kitty.extraConfig = lib.mkAfter "font_size 9.0";
 
+  programs.noctalia.settings.widget.network.show_label = true;
+
   # Lid closed only stays awake when docked (logind), so the panel can go dark safely.
   wayland.windowManager.hyprland.settings.bindl = [
     ", switch:on:Lid Switch, exec, ${hyprctl} keyword monitor \"eDP-1,disable\""
