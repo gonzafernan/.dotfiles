@@ -5,7 +5,7 @@
     enable = true;
     ignores = [ "**/.claude/settings.local.json" ];
     settings = {
-      user.name = "Gonzalo G. Fernandez";
+      user.name = lib.mkDefault "Gonzalo G. Fernandez";
       user.email = lib.mkDefault "fernandez.gfg@gmail.com";
       core.editor = "nvim";
       init.defaultBranch = "main";

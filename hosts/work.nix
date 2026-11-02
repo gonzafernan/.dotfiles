@@ -10,7 +10,10 @@ in
   home.username = "dell-1";
   home.homeDirectory = "/home/dell-1";
 
-  programs.git.settings.user.email = "gonzalo.fernandez@nio-robotics.com";
+  programs.git.settings.user = {
+    name = "Gonzalo Fernandez";
+    email = "gonzalo.fernandez@nimbleone.io";
+  };
 
   # 2560x1600 has no clean 1.5 divisor; 1.333333 gives a 1920x1200 workspace.
   wayland.windowManager.hyprland.settings.monitor = [ internal ];
