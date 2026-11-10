@@ -68,6 +68,10 @@
         border_width = 2;
         show_app_name = false;
       };
+      keybinds = {
+        up = [ "Up" "Shift+ISO_Left_Tab" ];
+        down = [ "Down" "Tab" ];
+      };
       idle.behavior = {
         lock = {
           timeout = 300;
