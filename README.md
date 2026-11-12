@@ -1,140 +1,94 @@
 # My dotfiles!
 
-## Environment setup
-
-Everything is installed and configured via Nix (home-manager):
+Home-manager configuration for two Ubuntu machines, `personal` and `work`.
 
 ```sh
 nix run home-manager -- switch --flake ".?submodules=1#personal"   # or #work
 ```
 
-(the `submodules=1` is required — this repo has a git submodule, and Nix's flake
-git fetcher excludes submodule content by default)
+`submodules=1` is required: `config/nvim` is a git submodule, which flakes skip by default.
 
 ## Layout
 
-- `hosts/` — one profile per machine (`personal`, `work`), each importing `home.nix`
-  plus its own modules
-- `home.nix` — the modules shared by every host (each host sets its own username)
-- `modules/` — one home-manager module per tool or topic
-- `config/` — the tools' own config files, linked or read as-is by the modules
-- `system/` — files that must be installed manually with sudo (see below)
-- `wallpapers/`
+- `flake.nix` — inputs and the host profiles. `nixpkgs-unstable` is for apps that
+  need to stay current (Chrome, Obsidian, Claude Code, ...).
+- `hosts/` — per-machine settings
+- `home.nix` — modules shared by every host
+- `modules/` — one module per tool or topic
+- `config/` — the tools' own config files, used as-is
+- `system/` — files installed by hand with sudo (see below)
 
-## Tools tracked
+CI evaluates both hosts and updates `flake.lock` twice a month.
 
-- Neovim
-- tmux
-- kitty
-- yazi
-- git
-- Obsidian — from `pkgsUnstable`, like Chrome; needs the Electron AppArmor
-  profile (see below)
-- Hyprland (see below)
-- Google Chrome — installed from `pkgsUnstable` (a second `nixpkgs-unstable`
-  flake input, see `flake.nix`), not the main `nixpkgs-24.11` pin: nixpkgs'
-  `google-chrome` derivation fetches one specific `.deb` by URL, and Google
-  routinely removes old versions from its download mirror, so a stable pin
-  404s within weeks. `nixpkgs-unstable` tracks the current version closely
-  enough to actually build. Needs a one-time AppArmor profile for its sandbox
-  (see below); scales itself automatically via `modules/hyprland.nix`'s `monitor`
-  scale and `NIXOS_OZONE_WL`, no per-app scale flag needed.
-- Vivado (Xilinx Design Suite) — config only: a manual
-  install at `/tools/Xilinx/Vivado/2024.2` (proprietary, licensed, not in
-  nixpkgs, not something we'd package ourselves), not managed by Nix at all.
-  Only its `.desktop` launcher entry is tracked (`modules/hdl.nix`, personal
-  host only), so the launcher can find it — bump the version number there if Vivado is ever upgraded.
+## Shell
 
-## GPU drivers for Nix apps: required manual system setup
+kitty and tmux start zsh; bash stays the login shell. See `modules/shell.nix`:
+vi mode (`jk` for normal mode), fzf for history, files and completion, and a starship prompt.
 
-`targets.genericLinux` links Nix's Mesa into `/run/opengl-driver`, where Nix-built
-GL apps (Hyprland, kitty, noctalia, zathura) look for drivers, so no driver
-variables leak into other sessions. One-time, and again whenever activation warns
-that the drivers changed:
+Tools are installed here or not at all:
+
+- needed by one project: that project's `flake.nix` plus an `.envrc` with `use flake` (direnv)
+- needed once: `nix run nixpkgs#<tool>`
+
+## One-time system setup
+
+Things a per-user home-manager can't reach on a non-NixOS distro. Redo them on a fresh install.
+
+### GPU drivers
+
+Links Nix's Mesa into `/run/opengl-driver` for Nix-built GL apps. Rerun whenever
+activation warns that the drivers changed:
 
 ```sh
 sudo $(readlink -f ~/.nix-profile/bin/non-nixos-gpu-setup)
 ```
 
-`work` also gets NVIDIA's libraries there (`hosts/work.nix`), since its external
-outputs are on the NVIDIA GPU. They must match the kernel driver exactly, so hold
-Ubuntu's driver and only update it deliberately:
+`work` also needs NVIDIA's libraries, which must match the kernel driver exactly, so the driver is held:
 
 ```sh
 sudo apt-mark hold nvidia-driver-580-open linux-modules-nvidia-580-open-generic
 ```
 
-To update: `apt-mark unhold` both, upgrade, reboot, then set `version` in
-`hosts/work.nix` to `cat /sys/module/nvidia/version` and `sha256` to the output of
-`nix store prefetch-file https://download.nvidia.com/XFree86/Linux-x86_64/<version>/NVIDIA-Linux-x86_64-<version>.run`,
-switch, rerun the setup command above, and hold again.
+To update it:
 
-## Chrome and Electron sandbox: required manual system setup
+1. Unhold both packages, upgrade and reboot.
+2. In `hosts/work.nix`, set `version` to the output of `cat /sys/module/nvidia/version`
+   and `sha256` to the output of
+   `nix store prefetch-file https://download.nvidia.com/XFree86/Linux-x86_64/<version>/NVIDIA-Linux-x86_64-<version>.run`.
+3. Switch, rerun the setup command above, and hold both packages again.
 
-Ubuntu blocks unprivileged user namespaces unless an AppArmor profile allows
-them, and Chrome's sandbox needs them. Ubuntu's own profile only covers
-`/opt/google/chrome/chrome`, so the Nix build gets an equivalent one matching
-its store path (without it Chrome refuses to start):
+### Chrome and Electron sandbox
 
-```sh
-sudo cp system/apparmor.d/nix-google-chrome /etc/apparmor.d/
-sudo apparmor_parser -r /etc/apparmor.d/nix-google-chrome
-```
-
-Electron apps from Nix (Obsidian) need the same, matching Nix's Electron binary:
+Ubuntu only allows the user namespaces their sandboxes need for binaries with an
+AppArmor profile:
 
 ```sh
-sudo cp system/apparmor.d/nix-electron /etc/apparmor.d/
-sudo apparmor_parser -r /etc/apparmor.d/nix-electron
+for p in nix-google-chrome nix-electron; do
+  sudo cp system/apparmor.d/$p /etc/apparmor.d/
+  sudo apparmor_parser -r /etc/apparmor.d/$p
+done
 ```
 
-Trade-off: anything running as this user can create a store path matching the
-profile's glob and regain user namespaces, which the restriction exists to
-deny. Accepted here in exchange for Chrome's and Electron's renderer sandbox.
+Trade-off: anything running as this user can create a matching store path and
+regain user namespaces.
 
-## Hyprland on non-NixOS: required manual system setup
+### Hyprland
 
-Hyprland itself and its whole ecosystem (the noctalia shell — bar, notifications,
-lock screen, idle, wallpaper, launcher, ...) are fully declared in `modules/hyprland.nix`
-and `modules/noctalia.nix`. But a few things live outside what a per-user
-home-manager install can reach — system paths and group membership — and have no
-Nix-managed equivalent on a non-NixOS distro. These are one-time steps to redo on
-a fresh machine (or after a reinstall):
+```sh
+sudo cp system/wayland-sessions/hyprland.desktop /usr/share/wayland-sessions/
+sudo usermod -aG render "$USER"   # GBM/DRM access; log out and back in afterwards
+```
 
-1. **GDM session entry**, so Hyprland is selectable at the login screen:
-   ```sh
-   sudo cp system/wayland-sessions/hyprland.desktop /usr/share/wayland-sessions/
-   ```
+### Lock screen
 
-2. **Render group membership** (needed for Hyprland's GBM/DRM access — without
-   it, Hyprland crashes on startup with `CDRMRenderer: fail, no gbm support`):
-   ```sh
-   sudo usermod -aG render "$USER"
-   ```
-   Requires a full logout/login (not just re-activating home-manager) to take
-   effect.
+Nix's PAM can't parse Ubuntu's `/etc/pam.d`, and it looks for `unix_chkpwd` at a
+NixOS-only path. Without this, the lock screen rejects every password:
 
-3. **noctalia's lock screen PAM setup.** Nix's own PAM library (linked into
-   Nix-built noctalia) can't parse Debian/Ubuntu's `@include` directive used
-   throughout `/etc/pam.d/*`, so without its own config the lock screen fails
-   every unlock attempt — **regardless of the password**, since the config never
-   even parses. Upstream hardcodes the `login` service (which TTY login also
-   uses, so it must stay untouched); `flake.nix` patches it to `noctalia`:
-   ```sh
-   sudo cp system/pam.d/noctalia /etc/pam.d/noctalia
-   ```
-   Separately, Nix's `pam_unix.so` has `/run/wrappers/bin/unix_chkpwd` hardcoded
-   as the helper it execs to check the password against `/etc/shadow` — a
-   NixOS-only path (created there by NixOS's setuid-wrapper mechanism). This
-   redirects it to Ubuntu's own working `unix_chkpwd`. Uses `tmpfiles.d` (not a
-   one-off symlink) because `/run` is a tmpfs wiped on every reboot:
-   ```sh
-   sudo cp system/tmpfiles.d/nix-pam-wrappers.conf /etc/tmpfiles.d/
-   sudo systemd-tmpfiles --create /etc/tmpfiles.d/nix-pam-wrappers.conf
-   ```
+```sh
+sudo cp system/pam.d/noctalia /etc/pam.d/noctalia
+sudo cp system/tmpfiles.d/nix-pam-wrappers.conf /etc/tmpfiles.d/
+sudo systemd-tmpfiles --create /etc/tmpfiles.d/nix-pam-wrappers.conf
+```
 
-**If the lock screen ever gets stuck** (PAM misconfigured, screen locked, password
-not accepted): switch to a TTY (Ctrl+Alt+F3), log in there (unaffected — it uses
-the system's own PAM stack, not Nix's), find the Hyprland session with
-`loginctl list-sessions` and run `loginctl unlock-session <id>` — noctalia unlocks
-on logind's Unlock signal without needing to authenticate.
+If you get stuck at the lock screen: switch to a TTY (Ctrl+Alt+F3), log in, then run
+`loginctl list-sessions` and `loginctl unlock-session <id>`.
