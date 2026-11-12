@@ -1,8 +1,9 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 
 {
   programs.tmux = {
     enable = true;
+    shell = "${config.programs.zsh.package}/bin/zsh";
     extraConfig = builtins.readFile ../config/tmux/tmux.conf;
     plugins = [
       {

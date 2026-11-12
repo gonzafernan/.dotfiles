@@ -11,6 +11,7 @@
     ./modules/kitty.nix
     ./modules/yazi.nix
     ./modules/nvim.nix
+    ./modules/shell.nix
     ./modules/git.nix
     ./modules/obsidian.nix
   ];

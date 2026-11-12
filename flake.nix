@@ -22,7 +22,7 @@
       # Allow unfree packages one by one, not globally.
       config = {
         allowUnfreePredicate = pkg:
-          builtins.elem (nixpkgs.lib.getName pkg) [ "google-chrome" "nvidia-x11" "obsidian" ];
+          builtins.elem (nixpkgs.lib.getName pkg) [ "claude-code" "google-chrome" "nvidia-x11" "obsidian" ];
         nvidia.acceptLicense = true;
       };
       pkgs = import nixpkgs { inherit system config; };

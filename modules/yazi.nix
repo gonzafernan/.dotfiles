@@ -4,6 +4,8 @@
   programs.yazi = {
     enable = true;
     package = pkgsUnstable.yazi;
+    shellWrapperName = "y";
+    enableBashIntegration = false;
   };
   xdg.configFile = {
     "yazi/yazi.toml".text = builtins.readFile ../config/yazi/yazi.toml;
