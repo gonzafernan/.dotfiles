@@ -9,6 +9,7 @@
       user.email = lib.mkDefault "fernandez.gfg@gmail.com";
       core.editor = "nvim";
       init.defaultBranch = "main";
+      push.recurseSubmodules = "check";
       status.branch = true;
       status.showStash = true;
       url."git@github.com:".insteadOf = "gh:";
